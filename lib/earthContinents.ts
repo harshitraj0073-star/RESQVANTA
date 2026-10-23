@@ -157,6 +157,11 @@ export const CONTINENT_POLYGONS: [number, number][][] = [
  * Generates a high-contrast, stylized 3D Earth canvas texture with visible continents,
  * delicate coastlines, subtle dot-matrix landmasses, and latitude/longitude graticules.
  */
+/**
+ * Generates a photorealistic satellite-style 3D Earth canvas texture with natural
+ * deep bathymetric oceans, realistic vegetation & desert biomes, subtle cloud bands,
+ * and illuminated emergency crisis hubs.
+ */
 export function createStylizedEarthTexture(
   isLight: boolean,
   accentHex: string
@@ -172,53 +177,25 @@ export function createStylizedEarthTexture(
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
 
-  // 1. Ocean Base Fill
+  // 1. Natural Oceanic Bathymetric Base Fill (Deep Abyssal Blue with Coastal Shelves)
   const oceanGradient = ctx.createLinearGradient(0, 0, 0, height);
   if (isLight) {
-    oceanGradient.addColorStop(0, "#e6eef8");
-    oceanGradient.addColorStop(0.5, "#eef4fb");
-    oceanGradient.addColorStop(1, "#e2ebf5");
+    // Elegant bright marine deep navy for crisp light theme
+    oceanGradient.addColorStop(0, "#081d38");
+    oceanGradient.addColorStop(0.35, "#0b2548");
+    oceanGradient.addColorStop(0.5, "#0e2f5c");
+    oceanGradient.addColorStop(0.65, "#0b2548");
+    oceanGradient.addColorStop(1, "#081d38");
   } else {
-    oceanGradient.addColorStop(0, "#030711");
-    oceanGradient.addColorStop(0.5, "#061022");
-    oceanGradient.addColorStop(1, "#030711");
+    // Cinematic deep space ocean navy
+    oceanGradient.addColorStop(0, "#040e1c");
+    oceanGradient.addColorStop(0.3, "#07172e");
+    oceanGradient.addColorStop(0.5, "#0a2244");
+    oceanGradient.addColorStop(0.7, "#07172e");
+    oceanGradient.addColorStop(1, "#040e1c");
   }
   ctx.fillStyle = oceanGradient;
   ctx.fillRect(0, 0, width, height);
-
-  // 2. Subtle Latitude & Longitude Graticule Lines
-  ctx.strokeStyle = isLight
-    ? "rgba(14, 116, 144, 0.11)"
-    : "rgba(34, 211, 238, 0.08)";
-  ctx.lineWidth = 1.2;
-
-  // Longitude lines every 20 degrees
-  for (let lon = -180; lon <= 180; lon += 20) {
-    const x = ((lon + 180) / 360) * width;
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, height);
-    ctx.stroke();
-  }
-
-  // Latitude lines every 15 degrees
-  for (let lat = -75; lat <= 75; lat += 15) {
-    const y = ((90 - lat) / 180) * height;
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(width, y);
-    ctx.stroke();
-  }
-
-  // Equator highlight line
-  ctx.strokeStyle = isLight
-    ? "rgba(8, 145, 178, 0.24)"
-    : "rgba(34, 211, 238, 0.22)";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(0, height / 2);
-  ctx.lineTo(width, height / 2);
-  ctx.stroke();
 
   // Helper to convert [lon, lat] to canvas [x, y]
   const toXY = (lon: number, lat: number): [number, number] => {
@@ -227,7 +204,7 @@ export function createStylizedEarthTexture(
     return [x, y];
   };
 
-  // 3. Draw Stylized Continents
+  // 2. Continental Coastal Shelf Shallows (Azure Glow Around Landmasses)
   ctx.save();
   for (const poly of CONTINENT_POLYGONS) {
     if (poly.length < 3) continue;
@@ -239,28 +216,18 @@ export function createStylizedEarthTexture(
       ctx.lineTo(px, py);
     }
     ctx.closePath();
-
-    // Continent interior fill
-    ctx.fillStyle = isLight
-      ? "rgba(100, 116, 139, 0.28)"
-      : "rgba(14, 165, 233, 0.22)";
-    ctx.fill();
-
-    // Coastline rim glow
-    ctx.strokeStyle = isLight ? "#0891b2" : accentHex;
-    ctx.lineWidth = isLight ? 2.4 : 2.8;
-    ctx.shadowColor = isLight ? "rgba(8, 145, 178, 0.35)" : accentHex;
-    ctx.shadowBlur = isLight ? 4 : 10;
+    ctx.strokeStyle = "rgba(14, 165, 233, 0.28)";
+    ctx.lineWidth = 14;
+    ctx.lineJoin = "round";
     ctx.stroke();
   }
   ctx.restore();
 
-  // 4. Draw High-Tech Dot-Matrix Pattern Inside Continents
-  // Create an offscreen mask to test land pixels or clip to continent paths
+  // 3. Realistic Terrestrial Landmass Biomes (Lush Vegetation, Savannas, Deserts, Ice)
   ctx.save();
-  ctx.beginPath();
   for (const poly of CONTINENT_POLYGONS) {
     if (poly.length < 3) continue;
+    ctx.beginPath();
     const [startX, startY] = toXY(poly[0][0], poly[0][1]);
     ctx.moveTo(startX, startY);
     for (let i = 1; i < poly.length; i++) {
@@ -268,47 +235,84 @@ export function createStylizedEarthTexture(
       ctx.lineTo(px, py);
     }
     ctx.closePath();
-  }
-  ctx.clip();
 
-  ctx.fillStyle = isLight
-    ? "rgba(8, 145, 178, 0.52)"
-    : "rgba(103, 232, 249, 0.65)";
+    // Natural Earth Terrestrial Color Gradient across latitudes
+    const landGrad = ctx.createLinearGradient(0, 0, 0, height);
+    landGrad.addColorStop(0, "#e2e8f0"); // Arctic/Tundra
+    landGrad.addColorStop(0.18, "#2d4826"); // Northern Boreal Forest
+    landGrad.addColorStop(0.38, "#3e5c32"); // Temperate Vegetation
+    landGrad.addColorStop(0.5, "#466333"); // Tropics & India Subcontinent
+    landGrad.addColorStop(0.58, "#736440"); // Arid/Savanna
+    landGrad.addColorStop(0.82, "#344e2b"); // Southern Temperate
+    landGrad.addColorStop(1, "#cbd5e1"); // Antarctic fringe
 
-  const step = 12;
-  for (let x = step / 2; x < width; x += step) {
-    for (let y = step / 2; y < height; y += step) {
-      ctx.beginPath();
-      ctx.arc(x, y, 2.1, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    ctx.fillStyle = landGrad;
+    ctx.fill();
+
+    // Natural Coastline Edge
+    ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
   }
   ctx.restore();
 
-  // 5. Highlight Major Emergency Hub Rings on the Texture
+  // 4. Subtle Latitude/Longitude Graticule Lines (Satellite Defense Grid)
+  ctx.strokeStyle = "rgba(56, 189, 248, 0.07)";
+  ctx.lineWidth = 1;
+  for (let lon = -180; lon <= 180; lon += 30) {
+    const x = ((lon + 180) / 360) * width;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, height);
+    ctx.stroke();
+  }
+  for (let lat = -60; lat <= 60; lat += 30) {
+    const y = ((90 - lat) / 180) * height;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+    ctx.stroke();
+  }
+
+  // 5. Procedural Swirling Cloud Layer Bands (Whispy Translucent White Formations)
+  ctx.save();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.16)";
+  // Equatorial ITCZ Cloud Band
+  ctx.beginPath();
+  ctx.ellipse(width * 0.48, height * 0.48, width * 0.45, height * 0.04, -0.05, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(width * 0.72, height * 0.52, width * 0.28, height * 0.035, 0.04, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Northern Mid-Latitude Storm Track Swirl
+  ctx.beginPath();
+  ctx.ellipse(width * 0.28, height * 0.28, width * 0.25, height * 0.045, 0.08, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(width * 0.78, height * 0.26, width * 0.22, height * 0.04, -0.06, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Southern Roaring Forties Cloud Stream
+  ctx.beginPath();
+  ctx.ellipse(width * 0.5, height * 0.76, width * 0.48, height * 0.038, 0.02, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // 6. Highlight Major Emergency Hub Rings on the Texture
   for (const hub of GLOBAL_EMERGENCY_HUBS) {
     const [hx, hy] = toXY(hub.lon, hub.lat);
     ctx.beginPath();
-    ctx.arc(hx, hy, hub.isPrimary ? 7 : 4.5, 0, Math.PI * 2);
-    ctx.fillStyle = hub.isPrimary
-      ? isLight
-        ? "#d97706"
-        : "#fbbf24"
-      : isLight
-      ? "#0891b2"
-      : "#22d3ee";
+    ctx.arc(hx, hy, hub.isPrimary ? 6 : 4, 0, Math.PI * 2);
+    ctx.fillStyle = hub.isPrimary ? "#fbbf24" : accentHex;
     ctx.fill();
 
     ctx.beginPath();
-    ctx.arc(hx, hy, hub.isPrimary ? 15 : 10, 0, Math.PI * 2);
+    ctx.arc(hx, hy, hub.isPrimary ? 13 : 8.5, 0, Math.PI * 2);
     ctx.strokeStyle = hub.isPrimary
-      ? isLight
-        ? "rgba(217, 119, 6, 0.55)"
-        : "rgba(251, 191, 36, 0.65)"
-      : isLight
-      ? "rgba(8, 145, 178, 0.45)"
-      : "rgba(34, 211, 238, 0.5)";
-    ctx.lineWidth = 1.8;
+      ? "rgba(251, 191, 36, 0.6)"
+      : "rgba(34, 211, 238, 0.45)";
+    ctx.lineWidth = 1.5;
     ctx.stroke();
   }
 

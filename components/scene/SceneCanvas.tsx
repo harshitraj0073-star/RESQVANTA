@@ -15,6 +15,7 @@ interface SceneCanvasProps {
   onSelectHotspot: (id: string | null) => void;
   t: UIStrings;
   gpsCoords?: string | null;
+  flyoverStage?: "space" | "country" | "city";
 }
 
 export default function SceneCanvas({
@@ -25,6 +26,7 @@ export default function SceneCanvas({
   onSelectHotspot,
   t,
   gpsCoords,
+  flyoverStage,
 }: SceneCanvasProps) {
   return (
     <div className="w-full h-full relative">
@@ -43,6 +45,7 @@ export default function SceneCanvas({
             onSelectHotspot={onSelectHotspot}
             t={t}
             gpsCoords={gpsCoords}
+            flyoverStage={flyoverStage}
           />
           <OrbitControls
             enableZoom={false}

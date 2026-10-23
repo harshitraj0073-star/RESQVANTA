@@ -80,6 +80,7 @@ export default function ResQvantaApp() {
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [imageMimeType, setImageMimeType] = useState<string | null>(null);
   const [gpsCoords, setGpsCoords] = useState<string | null>(null);
+  const [flyoverStage, setFlyoverStage] = useState<"space" | "country" | "city">("city");
 
   // Strict Analysis Lifecycle & Request Isolation
   const [lifecycle, setLifecycle] = useState<AnalysisLifecycle>("idle");
@@ -314,6 +315,7 @@ export default function ResQvantaApp() {
             onSelectHotspot={setActiveHotspot}
             t={t}
             gpsCoords={gpsCoords}
+            flyoverStage={flyoverStage}
           />
         </div>
       )}
@@ -675,6 +677,8 @@ export default function ResQvantaApp() {
               activeReport={triageReport}
               theme={theme}
               language={language}
+              flyoverStage={flyoverStage}
+              onFlyoverStageChange={setFlyoverStage}
             />
 
             <div className="space-y-4 pt-2 border-t border-slate-500/15">

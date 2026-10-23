@@ -58,6 +58,7 @@ interface HolographicCoreProps {
   onSelectHotspot: (id: string | null) => void;
   t: UIStrings;
   gpsCoords?: string | null;
+  flyoverStage?: "space" | "country" | "city";
 }
 
 const EARTH_RADIUS = 1.52;
@@ -70,6 +71,7 @@ export function HolographicCore({
   onSelectHotspot,
   t,
   gpsCoords,
+  flyoverStage = "city",
 }: HolographicCoreProps) {
   const groupRef = useRef<THREE.Group>(null!);
   const earthRotationGroupRef = useRef<THREE.Group>(null!);
@@ -182,8 +184,12 @@ export function HolographicCore({
 
   // Target Euler rotation to bring target coordinates directly facing the camera
   const targetRadarRot = useMemo(() => {
+    if (flyoverStage === "country") {
+      // Orbit directly over India Subcontinent (Center of India: 22.0° N, 79.0° E)
+      return latLonToTargetRotation(22.0, 79.0);
+    }
     return latLonToTargetRotation(parsedCoords.lat, parsedCoords.lon);
-  }, [parsedCoords]);
+  }, [flyoverStage, parsedCoords]);
 
   // 3D vector and surface orientation on the sphere surface for the epicenter beacon
   const { epicenterVector, epicenterQuaternion } = useMemo(() => {
@@ -217,16 +223,20 @@ export function HolographicCore({
     return positions;
   }, []);
 
-  // Camera choreography across views (Cinematic close-up framing in Radar mode)
+  // Camera choreography across views (Cinematic Space -> India -> City flyover altitudes)
   const targetCameraPos = useMemo(() => {
     if (viewMode === "hero" && activeHotspot) {
       const found = CORE_HOTSPOTS.find((h) => h.id === activeHotspot);
       if (found) return new THREE.Vector3(...found.cameraTarget);
     }
     if (viewMode === "hero") return new THREE.Vector3(0, 0.18, 5.05);
-    if (viewMode === "radar") return new THREE.Vector3(0, 0, 3.05); // Clean tactical planetary zoom!
+    if (viewMode === "radar") {
+      if (flyoverStage === "space") return new THREE.Vector3(0, 0.1, 4.85); // Space Orbit
+      if (flyoverStage === "country") return new THREE.Vector3(0, 0, 3.65); // Country Orbit
+      return new THREE.Vector3(0, 0, 2.75); // City Descent
+    }
     return new THREE.Vector3(1.85, 0.1, 6.3);
-  }, [viewMode, activeHotspot]);
+  }, [viewMode, activeHotspot, flyoverStage]);
 
   useFrame((state, delta) => {
     const deltaFactor = Math.min(delta, 0.1);
