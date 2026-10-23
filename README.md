@@ -4,6 +4,7 @@
 > Built for **PromptWars 2026 × ALTA School of Technology** (Hack2Skill).  
 > **Vertical:** Societal Benefit — Universal Bridge Between Human Intent and Complex Systems.  
 > **Live Submission ID:** `6ad993efe245c1eabf8596d7`  
+> **Live Website:** [https://resqvanta-ai.vercel.app](https://resqvanta-ai.vercel.app)  
 > **Repository:** [https://github.com/harshitraj0073-star/RESQVANTA](https://github.com/harshitraj0073-star/RESQVANTA)
 
 ---
