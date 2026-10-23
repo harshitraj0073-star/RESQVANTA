@@ -9,6 +9,7 @@ import {
   Sun,
   Moon,
   Globe,
+  Clock,
 } from "lucide-react";
 import {
   SUPPORTED_LANGUAGES,
@@ -26,6 +27,7 @@ interface TopNavProps {
   onLanguageChange: (lang: SupportedLanguage) => void;
   viewMode: "hero" | "workspace" | "radar";
   onViewModeChange: (mode: "hero" | "workspace" | "radar") => void;
+  onOpenHistory?: () => void;
   t: UIStrings;
   historyCount: number;
 }
@@ -39,6 +41,7 @@ export function TopNav({
   onLanguageChange,
   viewMode,
   onViewModeChange,
+  onOpenHistory,
   t,
   historyCount,
 }: TopNavProps) {
@@ -105,39 +108,72 @@ export function TopNav({
         aria-label="Primary View Navigation"
         className="hidden lg:flex items-center space-x-1"
       >
-        {(
-          [
-            { id: "hero", label: t.navShowroom },
-            { id: "workspace", label: t.navWorkspace },
-            {
-              id: "radar",
-              label:
-                historyCount > 0
-                  ? `${t.navHistory} (${historyCount})`
-                  : t.navHistory,
-            },
-          ] as const
-        ).map((tab) => {
-          const active = viewMode === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => onViewModeChange(tab.id)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition cursor-pointer ${
-                active
-                  ? isLight
-                    ? "bg-slate-900 text-white font-semibold"
-                    : "bg-cyan-500/20 text-cyan-300 font-semibold"
-                  : isLight
-                  ? "text-slate-600 hover:text-slate-950"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
+        <button
+          type="button"
+          onClick={() => onViewModeChange("workspace")}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition cursor-pointer ${
+            viewMode === "workspace"
+              ? isLight
+                ? "bg-slate-900 text-white font-semibold"
+                : "bg-cyan-500/20 text-cyan-300 font-semibold"
+              : isLight
+              ? "text-slate-600 hover:text-slate-950"
+              : "text-slate-400 hover:text-white"
+          }`}
+        >
+          {t.navWorkspace}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onViewModeChange("hero")}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition cursor-pointer ${
+            viewMode === "hero"
+              ? isLight
+                ? "bg-slate-900 text-white font-semibold"
+                : "bg-cyan-500/20 text-cyan-300 font-semibold"
+              : isLight
+              ? "text-slate-600 hover:text-slate-950"
+              : "text-slate-400 hover:text-white"
+          }`}
+        >
+          {t.navShowroom}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onViewModeChange("radar")}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition cursor-pointer ${
+            viewMode === "radar"
+              ? isLight
+                ? "bg-slate-900 text-white font-semibold"
+                : "bg-cyan-500/20 text-cyan-300 font-semibold"
+              : isLight
+              ? "text-slate-600 hover:text-slate-950"
+              : "text-slate-400 hover:text-white"
+          }`}
+        >
+          Radar Map
+        </button>
+
+        <button
+          type="button"
+          onClick={() =>
+            onOpenHistory ? onOpenHistory() : onViewModeChange("radar")
+          }
+          className={`px-3 py-1.5 rounded-full text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+            isLight
+              ? "text-slate-600 hover:text-slate-950 hover:bg-slate-100"
+              : "text-slate-400 hover:text-white hover:bg-white/5"
+          }`}
+        >
+          <span>{t.navHistory}</span>
+          {historyCount > 0 && (
+            <span className="w-4 h-4 rounded-full bg-cyan-500 text-slate-950 text-[10px] font-bold flex items-center justify-center">
+              {historyCount}
+            </span>
+          )}
+        </button>
       </nav>
 
       {/* Right Controls: 4-Language Selector, Light/Dark Toggle, 3D/2D Toggle, Call 112 */}
@@ -174,6 +210,25 @@ export function TopNav({
             ))}
           </select>
         </div>
+
+        {/* Mobile History Trigger (when there are incidents) */}
+        {historyCount > 0 && (
+          <button
+            type="button"
+            onClick={() =>
+              onOpenHistory ? onOpenHistory() : onViewModeChange("radar")
+            }
+            aria-label="View Incident History"
+            title="View Incident History"
+            className={`lg:hidden flex items-center justify-center p-2 rounded-full transition cursor-pointer ${
+              isLight
+                ? "bg-slate-200/70 text-slate-900 hover:bg-slate-200"
+                : "bg-slate-900/70 text-cyan-300 hover:bg-slate-800"
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5" />
+          </button>
+        )}
 
         {/* Light / Dark Mode Toggle */}
         <button

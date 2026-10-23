@@ -576,8 +576,8 @@ export function InputConsole({
         </div>
       </form>
 
-      {/* Optional Fictional Test Scenarios (Translated into Selected Language) */}
-      <div className="space-y-2 pt-2">
+      {/* Sleek Compact Scenario Chips */}
+      <div className="space-y-2 pt-1">
         <span
           className={`text-[11px] font-bold uppercase tracking-wider block ${
             isLight ? "text-slate-600" : "text-slate-400"
@@ -585,41 +585,31 @@ export function InputConsole({
         >
           {t.demoSectionTitle}
         </span>
-        <div className="grid grid-cols-1 gap-1.5">
+        <div className="flex flex-wrap gap-2">
           {PRESET_SCENARIOS.map((p) => {
             const loc = p.localized[language] || p.localized["en-IN"];
+            const icon =
+              p.id === "flood-electric"
+                ? "🌊"
+                : p.id === "highway-crash"
+                ? "🚗"
+                : "☕";
+            const shortTitle = loc.title.includes(":")
+              ? loc.title.split(":")[1].trim()
+              : loc.title;
             return (
               <button
                 key={p.id}
                 type="button"
                 onClick={() => handleSelectPreset(p)}
-                className={`text-left px-3.5 py-2 rounded-2xl backdrop-blur-md transition cursor-pointer flex items-center justify-between ${
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md transition cursor-pointer flex items-center gap-1.5 border ${
                   isLight
-                    ? "bg-white/65 hover:bg-white/90 text-slate-900 shadow-2xs"
-                    : "bg-slate-950/55 hover:bg-slate-900/75 text-slate-100"
+                    ? "bg-white/80 hover:bg-white text-slate-800 border-slate-200/80 shadow-2xs hover:border-cyan-500/50"
+                    : "bg-slate-900/80 hover:bg-slate-800 text-slate-200 border-white/10 hover:border-cyan-400/50"
                 }`}
               >
-                <div className="pr-2">
-                  <div className={`text-xs font-bold ${p.accentColor}`}>
-                    {loc.title}
-                  </div>
-                  <div
-                    className={`text-[11px] ${
-                      isLight ? "text-slate-600" : "text-slate-400"
-                    }`}
-                  >
-                    {loc.subtitle}
-                  </div>
-                </div>
-                <span
-                  className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full shrink-0 ${
-                    isLight
-                      ? "bg-slate-900/10 text-slate-800"
-                      : "bg-white/10 text-cyan-300"
-                  }`}
-                >
-                  {t.loadScenario}
-                </span>
+                <span>{icon}</span>
+                <span className="font-medium">{shortTitle}</span>
               </button>
             );
           })}

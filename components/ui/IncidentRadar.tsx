@@ -477,9 +477,9 @@ export function IncidentRadar({
         {/* Left 7 Columns: Verified Emergency Dispatch Nodes */}
         <div className="lg:col-span-7 space-y-3">
           <div className="flex items-center justify-between text-xs font-extrabold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">
-            <span>Nearest Verified Emergency Response Units</span>
+            <span>Reference Emergency Facilities (Demo Data)</span>
             <span className="text-[10px] font-mono opacity-65 font-normal">
-              {activeCity.name}
+              {activeCity.name} · Illustrative
             </span>
           </div>
 
@@ -588,7 +588,7 @@ export function IncidentRadar({
             <div className="flex items-center justify-between text-xs font-bold text-amber-500 mb-2">
               <span className="flex items-center gap-1.5">
                 <CloudSun className="w-4 h-4" />
-                <span>Live Environmental Telemetry</span>
+                <span>Regional Climate Profile (Demo Sample)</span>
               </span>
               <span className="text-[10px] font-mono opacity-70">
                 {activeCity.name}

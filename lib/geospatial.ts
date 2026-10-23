@@ -40,7 +40,9 @@ export interface GroundedCity {
 }
 
 /**
- * Verified Indian Command Sectors & Emergency Hubs
+ * Illustrative Indian Command Sectors & Reference Emergency Facilities
+ * NOTE: Used as demonstration benchmarks for spatial triage simulation.
+ * In production, telemetry is retrieved from authentic municipal ERSS APIs.
  */
 export const GROUNDED_CITIES: GroundedCity[] = [
   {
@@ -428,6 +430,7 @@ export function resolveTargetCity(coordsString: string | null | undefined): {
   city: GroundedCity;
   isMatchedPreset: boolean;
   coords: GeoCoordinate;
+  isDefaultFallback?: boolean;
 } {
   const defaultCity = GROUNDED_CITIES[0]; // Pune
 
@@ -436,6 +439,7 @@ export function resolveTargetCity(coordsString: string | null | undefined): {
       city: defaultCity,
       isMatchedPreset: true,
       coords: { lat: defaultCity.lat, lon: defaultCity.lon },
+      isDefaultFallback: true,
     };
   }
 

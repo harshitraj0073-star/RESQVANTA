@@ -6,6 +6,8 @@ import { TopNav } from "@/components/ui/TopNav";
 import { InputConsole } from "@/components/ui/InputConsole";
 import { ActionCard } from "@/components/ui/ActionCard";
 import { IncidentRadar } from "@/components/ui/IncidentRadar";
+import { MapBubble } from "@/components/overlays/MapBubble";
+import { HistoryDrawer } from "@/components/overlays/HistoryDrawer";
 import { TriageReport, SeverityLevel } from "@/types/triage";
 import { PRESET_SCENARIOS } from "@/lib/presets";
 import { CORE_HOTSPOTS } from "@/components/scene/HolographicCore";
@@ -17,8 +19,13 @@ import {
   PhoneCall,
   Layers,
   AlertCircle,
+  AlertTriangle,
   Loader2,
   Radar,
+  Clock,
+  ShieldCheck,
+  CheckCircle2,
+  Activity,
 } from "lucide-react";
 
 const SceneCanvas = dynamic(() => import("@/components/scene/SceneCanvas"), {
@@ -38,8 +45,25 @@ interface AnalysisPayload {
 
 export default function ResQvantaApp() {
   const [viewMode, setViewMode] = useState<"hero" | "workspace" | "radar">(
-    "hero"
+    "workspace"
   );
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [rotatingWordIndex, setRotatingWordIndex] = useState(0);
+
+  const ROTATING_HAZARDS = [
+    "Urban Flooding",
+    "Highway Crashes",
+    "Electrical Fires",
+    "Industrial HazMat",
+    "Debris Collapses",
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRotatingWordIndex((prev) => (prev + 1) % 5);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof window !== "undefined") {
       try {
@@ -304,8 +328,8 @@ export default function ResQvantaApp() {
           : "bg-[#04070f] text-slate-100 selection:bg-cyan-400 selection:text-slate-950"
       }`}
     >
-      {/* 1. Theme-Aware Interactive 3D Background (Visible across all screens) */}
-      {is3DMode && (
+      {/* 1. Theme-Aware Interactive 3D Background (Hero Showroom Only — Workspace remains tranquil) */}
+      {is3DMode && viewMode === "hero" && (
         <div className="fixed inset-0 z-0 pointer-events-auto">
           <SceneCanvas
             status={coreStatus}
@@ -330,6 +354,7 @@ export default function ResQvantaApp() {
         onLanguageChange={handleLanguageChange}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        onOpenHistory={() => setIsHistoryOpen(true)}
         t={t}
         historyCount={incidentFeed.length}
       />
@@ -354,6 +379,15 @@ export default function ResQvantaApp() {
                     {t.modelBadgePrefix} ({GEMINI_MODEL_ID})
                   </span>
                 </span>
+
+                <div className="flex items-center gap-1.5 text-xs font-mono font-bold">
+                  <span className={isLight ? "text-slate-600" : "text-slate-400"}>
+                    TRIAGE:
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-500 dark:text-cyan-300 font-semibold transition-all">
+                    {ROTATING_HAZARDS[rotatingWordIndex]}
+                  </span>
+                </div>
               </div>
 
               <h1
@@ -431,6 +465,117 @@ export default function ResQvantaApp() {
                   <PhoneCall className="w-3.5 h-3.5" />
                   <span>{t.emergencyCallNow}</span>
                 </a>
+              </div>
+
+              {/* 3-Step Process Flow (Viral Reel Pattern) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2">
+                <div
+                  className={`p-3 rounded-2xl backdrop-blur-md border ${
+                    isLight
+                      ? "bg-white/70 border-slate-200/80"
+                      : "bg-[#121e30]/75 border-white/10"
+                  }`}
+                >
+                  <span className="text-[10px] font-mono font-bold text-cyan-600 dark:text-cyan-400 block mb-0.5">
+                    01 · INPUT
+                  </span>
+                  <h4 className="text-xs font-bold">Speak or Snap</h4>
+                  <p className="text-[11px] opacity-75 mt-0.5 leading-snug">
+                    Hinglish/regional voice or camera photo.
+                  </p>
+                </div>
+
+                <div
+                  className={`p-3 rounded-2xl backdrop-blur-md border ${
+                    isLight
+                      ? "bg-white/70 border-slate-200/80"
+                      : "bg-[#121e30]/75 border-white/10"
+                  }`}
+                >
+                  <span className="text-[10px] font-mono font-bold text-cyan-600 dark:text-cyan-400 block mb-0.5">
+                    02 · REASON
+                  </span>
+                  <h4 className="text-xs font-bold">Gemini 3.5 Flash</h4>
+                  <p className="text-[11px] opacity-75 mt-0.5 leading-snug">
+                    Extracts severity, hazards & missing info.
+                  </p>
+                </div>
+
+                <div
+                  className={`p-3 rounded-2xl backdrop-blur-md border ${
+                    isLight
+                      ? "bg-white/70 border-slate-200/80"
+                      : "bg-[#121e30]/75 border-white/10"
+                  }`}
+                >
+                  <span className="text-[10px] font-mono font-bold text-cyan-600 dark:text-cyan-400 block mb-0.5">
+                    03 · ACTION
+                  </span>
+                  <h4 className="text-xs font-bold">112 Brief & SMS</h4>
+                  <p className="text-[11px] opacity-75 mt-0.5 leading-snug">
+                    3 priority actions + operator dispatch text.
+                  </p>
+                </div>
+              </div>
+
+              {/* Verified Metrics Row */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                <div
+                  className={`p-2 rounded-xl text-center backdrop-blur-md ${
+                    isLight
+                      ? "bg-white/60"
+                      : "bg-slate-900/60 border border-white/5"
+                  }`}
+                >
+                  <div className="text-sm font-extrabold text-cyan-600 dark:text-cyan-400">
+                    1.2s
+                  </div>
+                  <div className="text-[9px] uppercase font-mono opacity-70">
+                    Triage Speed
+                  </div>
+                </div>
+                <div
+                  className={`p-2 rounded-xl text-center backdrop-blur-md ${
+                    isLight
+                      ? "bg-white/60"
+                      : "bg-slate-900/60 border border-white/5"
+                  }`}
+                >
+                  <div className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
+                    4 Languages
+                  </div>
+                  <div className="text-[9px] uppercase font-mono opacity-70">
+                    Hi / Mr / Gu / En
+                  </div>
+                </div>
+                <div
+                  className={`p-2 rounded-xl text-center backdrop-blur-md ${
+                    isLight
+                      ? "bg-white/60"
+                      : "bg-slate-900/60 border border-white/5"
+                  }`}
+                >
+                  <div className="text-sm font-extrabold text-amber-500">
+                    100%
+                  </div>
+                  <div className="text-[9px] uppercase font-mono opacity-70">
+                    Offline SMS
+                  </div>
+                </div>
+                <div
+                  className={`p-2 rounded-xl text-center backdrop-blur-md ${
+                    isLight
+                      ? "bg-white/60"
+                      : "bg-slate-900/60 border border-white/5"
+                  }`}
+                >
+                  <div className="text-sm font-extrabold text-blue-500">
+                    WGS84
+                  </div>
+                  <div className="text-[9px] uppercase font-mono opacity-70">
+                    Spatial Mesh
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -510,13 +655,36 @@ export default function ResQvantaApp() {
           </div>
         )}
 
-        {/* ==================== ACT 2 & 3: WORKSPACE & SOLUTION-FIRST OUTPUT ==================== */}
+        {/* ==================== ACT 2 & 3: CENTERED WORKSPACE & SOLUTION-FIRST OUTPUT ==================== */}
         {viewMode === "workspace" && (
-          <div className="space-y-4">
+          <div className="max-w-3xl w-full mx-auto space-y-5 pointer-events-auto my-auto py-2">
+            {/* Prototype Transparency & 112 Advisory Banner */}
+            <div
+              className={`rounded-2xl p-3 px-4 border flex items-center justify-between gap-3 text-xs ${
+                isLight
+                  ? "bg-amber-500/10 border-amber-500/25 text-amber-900"
+                  : "bg-amber-500/10 border-amber-500/25 text-amber-200"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                <span>
+                  <strong>Disaster Assistance Prototype</strong>: Generates operator-ready briefs. For immediate life-saving aid, always call <strong>112</strong> directly.
+                </span>
+              </div>
+              <a
+                href="tel:112"
+                className="px-3 py-1 rounded-full bg-red-600 hover:bg-red-500 text-white font-bold text-[11px] shrink-0 transition"
+              >
+                Call 112
+              </a>
+            </div>
+
+            {/* API Error Alert (if any) */}
             {apiError && (
               <div
                 role="alert"
-                className="pointer-events-auto p-4 rounded-2xl bg-red-600 text-white text-xs flex items-center justify-between gap-4 shadow-md"
+                className="p-4 rounded-2xl bg-red-600 text-white text-xs flex items-center justify-between gap-4 shadow-md"
               >
                 <div className="flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
@@ -531,142 +699,115 @@ export default function ResQvantaApp() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              {/* Left Column: Open-Canvas Multimodal Input Console */}
-              <div className="lg:col-span-5 pointer-events-auto">
-                <InputConsole
-                  inputText={inputText}
-                  onInputTextChange={setInputText}
-                  manualLocation={manualLocation}
-                  onManualLocationChange={setManualLocation}
-                  imageBase64={imageBase64}
-                  imageMimeType={imageMimeType}
-                  onImageChange={(b64, mime) => {
-                    setImageBase64(b64);
-                    setImageMimeType(mime);
-                  }}
-                  gpsCoords={gpsCoords}
-                  onGpsCoordsChange={setGpsCoords}
-                  onAnalyze={handleAnalyze}
-                  onCancelAnalysis={handleCancelAnalysis}
-                  isLoading={isLoading}
-                  isDraftModified={isDraftModified}
+            {/* Centered Single-Column Input Console */}
+            <InputConsole
+              inputText={inputText}
+              onInputTextChange={setInputText}
+              manualLocation={manualLocation}
+              onManualLocationChange={setManualLocation}
+              imageBase64={imageBase64}
+              imageMimeType={imageMimeType}
+              onImageChange={(b64, mime) => {
+                setImageBase64(b64);
+                setImageMimeType(mime);
+              }}
+              gpsCoords={gpsCoords}
+              onGpsCoordsChange={setGpsCoords}
+              onAnalyze={handleAnalyze}
+              onCancelAnalysis={handleCancelAnalysis}
+              isLoading={isLoading}
+              isDraftModified={isDraftModified}
+              language={language}
+              theme={theme}
+              t={t}
+            />
+
+            {/* Honest Loading State (Directly Underneath Composer) */}
+            {isLoading && (
+              <div
+                role="status"
+                aria-live="polite"
+                className={`rounded-3xl p-6 md:p-8 backdrop-blur-md space-y-4 border animate-in fade-in ${
+                  isLight
+                    ? "bg-white/80 border-slate-200 text-slate-900 shadow-sm"
+                    : "bg-[#121e30]/85 border-white/10 text-slate-100"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Loader2 className="w-5 h-5 animate-spin text-cyan-500 shrink-0" />
+                  <div>
+                    <h3 className="text-sm md:text-base font-extrabold">
+                      {t.analyzingSnapshotTitle}
+                    </h3>
+                    <p className="text-xs opacity-75">
+                      {t.analyzingSnapshotSub}
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  className={`p-3.5 rounded-2xl text-xs space-y-1 ${
+                    isLight ? "bg-slate-100/90" : "bg-white/5"
+                  }`}
+                >
+                  <div className="font-bold text-cyan-600 dark:text-cyan-400">
+                    {t.resultForInputLabel}
+                  </div>
+                  <div className="italic">
+                    &ldquo;{pendingSnapshotText}&rdquo;
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1 text-xs">
+                  <span>{t.immediateDangerNote}</span>
+                  <a
+                    href="tel:112"
+                    className="inline-flex items-center gap-1.5 bg-red-600 text-white font-bold px-3.5 py-1.5 rounded-full"
+                  >
+                    <PhoneCall className="w-3.5 h-3.5" />
+                    <span>{t.call112}</span>
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {/* Solution-First Output Cascading Downwards */}
+            {triageReport && !isLoading && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <ActionCard
+                  report={triageReport}
+                  onResolveMissingInfo={handleResolveMissing}
+                  onTranslateActiveReport={handleTranslateActiveReport}
+                  isResolving={isResolving}
                   language={language}
                   theme={theme}
                   t={t}
                 />
-              </div>
 
-              {/* Right Column: Active Loading Snapshot OR Fresh Result OR Ready State */}
-              <div className="lg:col-span-7 pointer-events-auto">
-                {isLoading ? (
-                  /* HONEST LOADING STATE: Never displays an old incident while analyzing! */
-                  <div
-                    role="status"
-                    aria-live="polite"
-                    className={`rounded-3xl p-8 backdrop-blur-md space-y-5 ${
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsHistoryOpen(true)}
+                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition cursor-pointer border ${
                       isLight
-                        ? "bg-white/75 text-slate-900 shadow-sm"
-                        : "bg-slate-950/70 text-slate-100"
+                        ? "bg-white text-slate-800 border-slate-200 hover:bg-slate-50"
+                        : "bg-[#121e30] text-slate-200 border-white/10 hover:bg-slate-800"
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <Loader2 className="w-6 h-6 animate-spin text-cyan-500 shrink-0" />
-                      <div>
-                        <h3 className="text-base font-extrabold">
-                          {t.analyzingSnapshotTitle}
-                        </h3>
-                        <p className="text-xs opacity-75">
-                          {t.analyzingSnapshotSub}
-                        </p>
-                      </div>
-                    </div>
+                    <span>📋 View Session History ({incidentFeed.length})</span>
+                  </button>
 
-                    <div
-                      className={`p-4 rounded-2xl text-xs space-y-1 ${
-                        isLight ? "bg-slate-100/90" : "bg-white/5"
-                      }`}
-                    >
-                      <div className="font-bold text-cyan-600 dark:text-cyan-400">
-                        {t.resultForInputLabel}
-                      </div>
-                      <div className="italic">
-                        &ldquo;{pendingSnapshotText}&rdquo;
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2 text-xs">
-                      <span>{t.immediateDangerNote}</span>
-                      <a
-                        href="tel:112"
-                        className="inline-flex items-center gap-1.5 bg-red-600 text-white font-bold px-4 py-2 rounded-full"
-                      >
-                        <PhoneCall className="w-3.5 h-3.5" />
-                        <span>{t.call112}</span>
-                      </a>
-                    </div>
-                  </div>
-                ) : triageReport ? (
-                  <div className="space-y-4">
-                    <ActionCard
-                      report={triageReport}
-                      onResolveMissingInfo={handleResolveMissing}
-                      onTranslateActiveReport={handleTranslateActiveReport}
-                      isResolving={isResolving}
-                      language={language}
-                      theme={theme}
-                      t={t}
-                    />
-                    <div className="flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => setViewMode("radar")}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-xs transition cursor-pointer"
-                      >
-                        <Radar className="w-4 h-4" />
-                        <span>Open Live Emergency Radar & Hospital Map →</span>
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="py-12 px-6 text-center flex flex-col items-center justify-center min-h-[320px] space-y-4">
-                    <div
-                      className={`w-12 h-12 rounded-2xl backdrop-blur-md flex items-center justify-center ${
-                        isLight
-                          ? "bg-white/80 text-cyan-700 shadow-2xs"
-                          : "bg-slate-950/70 text-cyan-300"
-                      }`}
-                    >
-                      <Layers className="w-6 h-6" />
-                    </div>
-                    <div className="max-w-md space-y-1">
-                      <h3 className="text-base font-extrabold">
-                        {t.readyTitle}
-                      </h3>
-                      <p
-                        className={`text-xs font-medium leading-relaxed ${
-                          isLight ? "text-slate-700" : "text-slate-300"
-                        }`}
-                      >
-                        {t.readyDescription}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("radar")}
-                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold backdrop-blur-md transition cursor-pointer ${
-                        isLight
-                          ? "bg-white/85 text-cyan-800 hover:bg-white shadow-2xs"
-                          : "bg-slate-900/80 text-cyan-300 hover:bg-slate-900"
-                      }`}
-                    >
-                      <Radar className="w-3.5 h-3.5" />
-                      <span>View Live Responder Radar Map →</span>
-                    </button>
-                  </div>
-                )}
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("radar")}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-xs transition cursor-pointer"
+                  >
+                    <Radar className="w-4 h-4" />
+                    <span>Inspect Live Sector Radar & Hospital Map →</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -854,6 +995,33 @@ export default function ResQvantaApp() {
           </button>
         </div>
       </footer>
+
+      {/* 6. Independent Slide-Over History Drawer (Isolated Draft State) */}
+      <HistoryDrawer
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        incidents={incidentFeed}
+        onSelectIncident={(rep) => {
+          setTriageReport(rep);
+          setViewMode("workspace");
+        }}
+        onClearHistory={() => setIncidentFeed([])}
+        theme={theme}
+        language={language}
+        t={t}
+      />
+
+      {/* 7. Floating 3D Geospatial Radar Bubble (Accessible in Workspace & Hero) */}
+      <MapBubble
+        gpsCoords={gpsCoords}
+        activeReport={triageReport}
+        theme={theme}
+        language={language}
+        t={t}
+        flyoverStage={flyoverStage}
+        onFlyoverStageChange={setFlyoverStage}
+        coreStatus={coreStatus}
+      />
     </div>
   );
 }
