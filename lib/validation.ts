@@ -71,21 +71,88 @@ export const TriageReportSchema = z.object({
 
 export function validateTriageReport(data: unknown): TriageReport {
   const raw = { ...(data as Record<string, unknown>) };
-  if (Array.isArray(raw.immediate_actions) && raw.immediate_actions.length > 3) {
-    raw.immediate_actions = raw.immediate_actions.slice(0, 3);
-  }
-  if (!raw.requestId) {
+
+  if (!raw.requestId || typeof raw.requestId !== 'string') {
     raw.requestId = `req_${Date.now()}`;
   }
   if (typeof raw.submittedTextSnapshot !== 'string') {
-    raw.submittedTextSnapshot = '';
+    raw.submittedTextSnapshot = String(raw.submittedTextSnapshot || '');
   }
-  if (!raw.submittedAt) {
+  if (!raw.submittedAt || typeof raw.submittedAt !== 'string') {
     raw.submittedAt = new Date().toISOString();
   }
-  const matrix = raw.verification_matrix as Record<string, unknown> | undefined;
-  if (matrix && !Array.isArray(matrix.image_observations)) {
-    matrix.image_observations = [];
+  if (typeof raw.is_valid_emergency !== 'boolean') {
+    raw.is_valid_emergency = raw.is_valid_emergency === 'true' || raw.is_valid_emergency === true;
   }
+  if (!raw.incident_title || typeof raw.incident_title !== 'string') {
+    raw.incident_title = 'Emergency Incident Reported';
+  }
+  if (!raw.incident_category || typeof raw.incident_category !== 'string') {
+    raw.incident_category = 'General Emergency';
+  }
+  const validSeverities = ['CRITICAL', 'HIGH', 'MODERATE', 'LOW', 'UNCERTAIN', 'NON_EMERGENCY'];
+  if (!validSeverities.includes(raw.severity_level as string)) {
+    raw.severity_level = raw.is_valid_emergency ? 'HIGH' : 'NON_EMERGENCY';
+  }
+  if (!raw.urgency_rationale || typeof raw.urgency_rationale !== 'string') {
+    raw.urgency_rationale = 'Immediate situation reported by user requiring safety assessment.';
+  }
+  if (!raw.executive_summary || typeof raw.executive_summary !== 'string') {
+    raw.executive_summary = 'User reported emergency incident requiring immediate action.';
+  }
+  if (!raw.location_status || typeof raw.location_status !== 'object') {
+    raw.location_status = { detected_location: 'Not specified', is_location_precise: false };
+  }
+  if (!raw.people_affected || typeof raw.people_affected !== 'object') {
+    raw.people_affected = { reported_summary: 'Unknown', uncertainty: 'Unverified' };
+  }
+  if (!raw.verification_matrix || typeof raw.verification_matrix !== 'object') {
+    raw.verification_matrix = {
+      user_reported_facts: [raw.submittedTextSnapshot || 'Incident reported'],
+      image_observations: [],
+      ai_visual_or_context_inferences: [],
+      missing_critical_info: [],
+    };
+  } else {
+    const matrix = raw.verification_matrix as Record<string, unknown>;
+    if (!Array.isArray(matrix.user_reported_facts)) matrix.user_reported_facts = [];
+    if (!Array.isArray(matrix.image_observations)) matrix.image_observations = [];
+    if (!Array.isArray(matrix.ai_visual_or_context_inferences)) matrix.ai_visual_or_context_inferences = [];
+    if (!Array.isArray(matrix.missing_critical_info)) matrix.missing_critical_info = [];
+  }
+  if (!Array.isArray(raw.evidence_trace)) {
+    raw.evidence_trace = [
+      {
+        claim: raw.incident_title as string,
+        source_type: 'USER_TEXT',
+        supporting_quote_or_observation: raw.submittedTextSnapshot as string,
+        verification_status: 'USER_REPORTED',
+      },
+    ];
+  }
+  if (Array.isArray(raw.immediate_actions)) {
+    raw.immediate_actions = raw.immediate_actions.slice(0, 3).map((act: unknown, idx: number) => {
+      const a = (act && typeof act === 'object') ? (act as Record<string, unknown>) : {};
+      return {
+        step_number: typeof a.step_number === 'number' ? a.step_number : idx + 1,
+        instruction: typeof a.instruction === 'string' ? a.instruction : 'Remain in a safe location',
+        rationale: typeof a.rationale === 'string' ? a.rationale : 'Protects against immediate hazards',
+      };
+    });
+  } else {
+    raw.immediate_actions = [
+      { step_number: 1, instruction: 'Assess personal safety and remain clear of active hazards', rationale: 'Personal safety is first priority' },
+    ];
+  }
+  if (!Array.isArray(raw.critical_warnings)) {
+    raw.critical_warnings = ['Do not place yourself in danger to investigate.'];
+  }
+  if (!Array.isArray(raw.recommended_authorities)) {
+    raw.recommended_authorities = [{ name: 'Emergency Services', number: '112', reason: 'Official assistance' }];
+  }
+  if (!raw.dispatch_packet_text || typeof raw.dispatch_packet_text !== 'string') {
+    raw.dispatch_packet_text = `EMERGENCY: ${raw.incident_title}. Location pending confirmation.`;
+  }
+
   return TriageReportSchema.parse(raw) as TriageReport;
 }

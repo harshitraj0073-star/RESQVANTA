@@ -21,6 +21,8 @@ import {
   ChevronUp,
   Globe,
   Camera,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 
 interface ActionCardProps {
@@ -48,6 +50,7 @@ export function ActionCard({
   const [copied, setCopied] = useState(false);
   const [selectedTraceIdx, setSelectedTraceIdx] = useState<number | null>(0);
   const [prevReportId, setPrevReportId] = useState(report.requestId);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [editableBrief, setEditableBrief] = useState(
     report.dispatch_packet_text
   );
@@ -59,6 +62,33 @@ export function ActionCard({
   }
 
   const isLight = theme === "light";
+
+  const toggleSpeechReadout = () => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const actionTexts = (report.immediate_actions || [])
+      .slice(0, 3)
+      .map((a, i) => `${i + 1}. ${a.instruction}`)
+      .join(". ");
+
+    const textToSpeak = `${report.incident_title}. ${report.urgency_rationale}. ${actionTexts}`;
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    utterance.lang = language || "en-IN";
+    utterance.rate = 0.95;
+
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  };
 
   const handleCopyBrief = () => {
     navigator.clipboard.writeText(editableBrief);
@@ -247,13 +277,41 @@ export function ActionCard({
 
       {/* ==================== 2. WHAT TO DO RIGHT NOW (UP TO 3 STEPS) ==================== */}
       <div className="space-y-2.5">
-        <h3
-          className={`text-xs font-extrabold uppercase tracking-wider ${
-            isLight ? "text-cyan-700" : "text-cyan-400"
-          }`}
-        >
-          {t.whatToDoNowHeading}
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3
+            className={`text-xs font-extrabold uppercase tracking-wider ${
+              isLight ? "text-cyan-700" : "text-cyan-400"
+            }`}
+          >
+            {t.whatToDoNowHeading}
+          </h3>
+
+          {/* Voice Read Aloud Button for Panic / Visual Impairment Accessibility */}
+          <button
+            type="button"
+            onClick={toggleSpeechReadout}
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer ${
+              isSpeaking
+                ? "bg-red-600 text-white animate-pulse"
+                : isLight
+                ? "bg-cyan-100 hover:bg-cyan-200 text-cyan-900"
+                : "bg-cyan-950/80 hover:bg-cyan-900 text-cyan-200"
+            }`}
+            aria-label={isSpeaking ? "Stop Voice Readout" : "Listen to Emergency Actions"}
+          >
+            {isSpeaking ? (
+              <>
+                <VolumeX className="w-3.5 h-3.5" />
+                <span>Stop Voice</span>
+              </>
+            ) : (
+              <>
+                <Volume2 className="w-3.5 h-3.5" />
+                <span>Listen Aloud</span>
+              </>
+            )}
+          </button>
+        </div>
 
         <div className="space-y-2.5">
           {topActions.map((act, index) => (
