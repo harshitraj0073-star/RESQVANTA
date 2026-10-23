@@ -25,6 +25,15 @@ type VoiceStatus =
   | "unsupported";
 
 interface InputConsoleProps {
+  inputText: string;
+  onInputTextChange: (val: string) => void;
+  manualLocation: string;
+  onManualLocationChange: (val: string) => void;
+  imageBase64: string | null;
+  imageMimeType: string | null;
+  onImageChange: (base64: string | null, mime: string | null) => void;
+  gpsCoords: string | null;
+  onGpsCoordsChange: (coords: string | null) => void;
   onAnalyze: (payload: {
     text: string;
     imageBase64: string | null;
@@ -32,26 +41,32 @@ interface InputConsoleProps {
     gpsCoords: string | null;
     manualLocation: string;
   }) => void;
+  onCancelAnalysis: () => void;
   isLoading: boolean;
-  onGpsChange: (hasGps: boolean) => void;
+  isDraftModified: boolean;
   language: SupportedLanguage;
   theme: "light" | "dark";
   t: UIStrings;
 }
 
 export function InputConsole({
+  inputText,
+  onInputTextChange,
+  manualLocation,
+  onManualLocationChange,
+  imageBase64,
+  imageMimeType,
+  onImageChange,
+  gpsCoords,
+  onGpsCoordsChange,
   onAnalyze,
+  onCancelAnalysis,
   isLoading,
-  onGpsChange,
+  isDraftModified,
   language,
   theme,
   t,
 }: InputConsoleProps) {
-  const [inputText, setInputText] = useState("");
-  const [manualLocation, setManualLocation] = useState("");
-  const [imageBase64, setImageBase64] = useState<string | null>(null);
-  const [imageMimeType, setImageMimeType] = useState<string | null>(null);
-  const [gpsCoords, setGpsCoords] = useState<string | null>(null);
   const [gpsNotice, setGpsNotice] = useState<string | null>(null);
   const [voiceStatus, setVoiceStatus] = useState<VoiceStatus>("ready");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -60,7 +75,6 @@ export function InputConsole({
   const recognitionRef = useRef<any>(null);
   const isLight = theme === "light";
 
-  // Clean up microphone if component unmounts or language changes
   useEffect(() => {
     return () => {
       if (recognitionRef.current) {
@@ -74,7 +88,7 @@ export function InputConsole({
   }, []);
 
   const handleSelectPreset = (p: PresetScenario) => {
-    setInputText(p.text);
+    onInputTextChange(p.text);
     setErrorMessage(null);
   };
 
@@ -86,15 +100,13 @@ export function InputConsole({
         // ignore
       }
     }
-    setInputText("");
-    setManualLocation("");
-    setImageBase64(null);
-    setImageMimeType(null);
-    setGpsCoords(null);
+    onInputTextChange("");
+    onManualLocationChange("");
+    onImageChange(null, null);
+    onGpsCoordsChange(null);
     setGpsNotice(null);
     setVoiceStatus("ready");
     setErrorMessage(null);
-    onGpsChange(false);
   };
 
   const handleImageUpload = (file: File) => {
@@ -127,8 +139,7 @@ export function InputConsole({
         ctx?.drawImage(img, 0, 0, width, height);
 
         const compressedDataUrl = canvas.toDataURL(file.type, 0.85);
-        setImageBase64(compressedDataUrl);
-        setImageMimeType(file.type);
+        onImageChange(compressedDataUrl, file.type);
       };
       img.onerror = () => {
         setErrorMessage("Could not process image file. Please try another photo.");
@@ -138,7 +149,6 @@ export function InputConsole({
     reader.readAsDataURL(file);
   };
 
-  // Explicit Web Speech API Voice Recognition with 4-Language Locale Binding
   const toggleSpeechRecognition = () => {
     if (typeof window === "undefined") return;
 
@@ -169,7 +179,6 @@ export function InputConsole({
       recognitionRef.current = recognition;
       recognition.continuous = false;
       recognition.interimResults = false;
-      // Bind directly to selected Indian locale: en-IN, hi-IN, mr-IN, gu-IN
       recognition.lang = language;
 
       recognition.onstart = () => {
@@ -179,8 +188,8 @@ export function InputConsole({
       recognition.onresult = (event: any) => {
         const transcript = event.results?.[0]?.[0]?.transcript;
         if (transcript) {
-          setInputText((prev) =>
-            prev.trim() ? `${prev.trim()} ${transcript}` : transcript
+          onInputTextChange(
+            inputText.trim() ? `${inputText.trim()} ${transcript}` : transcript
           );
           setVoiceStatus("transcribed");
         } else {
@@ -223,16 +232,14 @@ export function InputConsole({
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const coords = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
-        setGpsCoords(coords);
+        onGpsCoordsChange(coords);
         setGpsNotice(null);
-        onGpsChange(true);
       },
       () => {
-        setGpsCoords(null);
+        onGpsCoordsChange(null);
         setGpsNotice(
           "Location permission declined. Please type your landmark or address manually."
         );
-        onGpsChange(false);
       },
       { timeout: 8000 }
     );
@@ -247,7 +254,7 @@ export function InputConsole({
     }
     setErrorMessage(null);
     onAnalyze({
-      text: inputText,
+      text: inputText.trim(),
       imageBase64,
       imageMimeType,
       gpsCoords,
@@ -258,19 +265,15 @@ export function InputConsole({
   return (
     <section
       aria-label={t.inputHeading}
-      className={`rounded-3xl p-5 md:p-7 backdrop-blur-md transition-colors space-y-5 ${
-        isLight
-          ? "bg-white/70 text-slate-900 shadow-lg shadow-slate-900/5"
-          : "bg-[#080d1a]/65 text-slate-100"
-      }`}
+      className="space-y-5 py-2"
     >
-      {/* Floating Header */}
+      {/* Floating Open-Canvas Header (No heavy card wrapper) */}
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h2 className="text-lg font-bold tracking-tight">{t.inputHeading}</h2>
+          <h2 className="text-xl font-extrabold tracking-tight">{t.inputHeading}</h2>
           <p
             className={`text-xs mt-0.5 ${
-              isLight ? "text-slate-600" : "text-slate-400"
+              isLight ? "text-slate-600" : "text-slate-300"
             }`}
           >
             {t.inputSubheading}
@@ -280,10 +283,10 @@ export function InputConsole({
           <button
             type="button"
             onClick={handleClearAll}
-            className={`flex items-center gap-1 text-xs px-3 py-1 rounded-full transition cursor-pointer ${
+            className={`flex items-center gap-1 text-xs px-3 py-1 rounded-full backdrop-blur-md transition cursor-pointer ${
               isLight
-                ? "bg-slate-200/80 text-slate-700 hover:bg-red-100 hover:text-red-700"
-                : "bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-300"
+                ? "bg-white/75 text-slate-700 hover:bg-red-100 hover:text-red-700"
+                : "bg-slate-900/75 text-slate-300 hover:bg-red-500/20 hover:text-red-300"
             }`}
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -292,65 +295,15 @@ export function InputConsole({
         )}
       </div>
 
-      {/* Borderless Fictional Test Scenario Pills */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span
-            className={`text-[11px] font-semibold uppercase tracking-wider ${
-              isLight ? "text-slate-500" : "text-slate-400"
-            }`}
-          >
-            {t.demoSectionTitle}
-          </span>
-        </div>
-        <div className="grid grid-cols-1 gap-1.5">
-          {PRESET_SCENARIOS.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => handleSelectPreset(p)}
-              className={`text-left px-3.5 py-2.5 rounded-2xl transition cursor-pointer flex items-center justify-between ${
-                isLight
-                  ? "bg-slate-100/90 hover:bg-slate-200/80 text-slate-900"
-                  : "bg-white/5 hover:bg-white/10 text-slate-100"
-              }`}
-            >
-              <div className="pr-2">
-                <div className={`text-xs font-bold ${p.accentColor}`}>
-                  {p.title}
-                </div>
-                <div
-                  className={`text-[11px] ${
-                    isLight ? "text-slate-600" : "text-slate-400"
-                  }`}
-                >
-                  {p.subtitle}
-                </div>
-              </div>
-              <span
-                className={`text-[10px] font-mono px-2.5 py-1 rounded-full shrink-0 ${
-                  isLight
-                    ? "bg-white text-slate-700 shadow-2xs"
-                    : "bg-white/10 text-cyan-300"
-                }`}
-              >
-                {t.loadScenario}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Input Form */}
+      {/* Main Input Form First (So User Can Immediately Type or Speak) */}
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Free-form Textarea + Voice Input */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label htmlFor="incident-text" className="text-xs font-semibold">
+            <label htmlFor="incident-text" className="text-xs font-bold">
               {t.whatHappenedLabel}
             </label>
             <span
-              className={`text-[10px] font-mono ${
+              className={`text-[10px] font-mono font-semibold ${
                 isLight ? "text-cyan-700" : "text-cyan-400"
               }`}
             >
@@ -363,12 +316,12 @@ export function InputConsole({
               id="incident-text"
               rows={4}
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
+              onChange={(e) => onInputTextChange(e.target.value)}
               placeholder={t.inputPlaceholder}
-              className={`w-full rounded-2xl p-4 pb-12 text-xs leading-relaxed transition resize-none focus:outline-none ${
+              className={`w-full rounded-2xl p-4 pb-12 text-xs sm:text-sm leading-relaxed backdrop-blur-md transition resize-none focus:outline-none ${
                 isLight
-                  ? "bg-white/90 text-slate-900 placeholder-slate-400 shadow-inner"
-                  : "bg-slate-950/75 text-slate-100 placeholder-slate-500"
+                  ? "bg-white/80 text-slate-950 placeholder-slate-500 shadow-sm"
+                  : "bg-slate-950/70 text-white placeholder-slate-400"
               }`}
             />
 
@@ -376,12 +329,12 @@ export function InputConsole({
             <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between gap-2">
               <div className="text-[11px] truncate">
                 {voiceStatus === "listening" && (
-                  <span className="text-red-500 font-semibold animate-pulse">
+                  <span className="text-red-500 font-bold animate-pulse">
                     ● {t.voiceListening} ({language})
                   </span>
                 )}
                 {voiceStatus === "transcribed" && (
-                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
                     ✓ {t.voiceTranscribed}
                   </span>
                 )}
@@ -393,12 +346,12 @@ export function InputConsole({
                 aria-label={
                   voiceStatus === "listening" ? t.voiceStop : t.voiceReady
                 }
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition cursor-pointer shrink-0 ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer shrink-0 ${
                   voiceStatus === "listening" || voiceStatus === "requesting"
                     ? "bg-red-600 text-white animate-pulse"
                     : isLight
-                    ? "bg-slate-200 text-slate-800 hover:bg-slate-300"
-                    : "bg-white/10 text-slate-200 hover:bg-white/20"
+                    ? "bg-slate-900/10 text-slate-900 hover:bg-slate-900/20"
+                    : "bg-white/15 text-white hover:bg-white/25"
                 }`}
               >
                 {voiceStatus === "listening" ? (
@@ -420,16 +373,23 @@ export function InputConsole({
             </div>
           </div>
 
-          {/* Honest Voice Error / Unsupported Feedback */}
+          {/* Notice if user modified the draft after a report was generated */}
+          {isDraftModified && !isLoading && (
+            <div className="text-xs font-medium text-amber-600 dark:text-amber-300 px-1">
+              ● {t.draftModifiedNotice}
+            </div>
+          )}
+
+          {/* Honest Voice Feedback */}
           {(voiceStatus === "denied" ||
             voiceStatus === "failed" ||
             voiceStatus === "unsupported") && (
             <div
               role="status"
-              className={`text-[11px] px-3 py-2 rounded-xl ${
+              className={`text-xs px-3.5 py-2 rounded-2xl backdrop-blur-md ${
                 isLight
-                  ? "bg-amber-100/90 text-amber-900"
-                  : "bg-amber-950/40 text-amber-200"
+                  ? "bg-amber-100/90 text-amber-950"
+                  : "bg-amber-950/60 text-amber-200"
               }`}
             >
               {voiceStatus === "denied" && t.voicePermissionDenied}
@@ -441,7 +401,7 @@ export function InputConsole({
 
         {/* Location Row */}
         <div className="space-y-1.5">
-          <label htmlFor="manual-location" className="block text-xs font-semibold">
+          <label htmlFor="manual-location" className="block text-xs font-bold">
             {t.locationLabel}
           </label>
           <div className="flex flex-col sm:flex-row gap-2">
@@ -449,26 +409,26 @@ export function InputConsole({
               id="manual-location"
               type="text"
               value={manualLocation}
-              onChange={(e) => setManualLocation(e.target.value)}
+              onChange={(e) => onManualLocationChange(e.target.value)}
               placeholder={t.locationPlaceholder}
-              className={`flex-1 rounded-2xl px-3.5 py-2.5 text-xs focus:outline-none ${
+              className={`flex-1 rounded-2xl px-3.5 py-2.5 text-xs backdrop-blur-md focus:outline-none ${
                 isLight
-                  ? "bg-white/90 text-slate-900 placeholder-slate-400 shadow-inner"
-                  : "bg-slate-950/75 text-slate-100 placeholder-slate-500"
+                  ? "bg-white/80 text-slate-950 placeholder-slate-500 shadow-sm"
+                  : "bg-slate-950/70 text-white placeholder-slate-400"
               }`}
             />
             <button
               type="button"
               onClick={shareBrowserLocation}
-              className={`px-3.5 py-2.5 rounded-2xl text-xs font-medium flex items-center justify-center gap-1.5 shrink-0 transition cursor-pointer ${
+              className={`px-3.5 py-2.5 rounded-2xl text-xs font-semibold flex items-center justify-center gap-1.5 shrink-0 backdrop-blur-md transition cursor-pointer ${
                 gpsCoords
                   ? "bg-cyan-600 text-white"
                   : isLight
-                  ? "bg-slate-200/80 text-slate-800 hover:bg-slate-300/80"
-                  : "bg-white/10 text-slate-200 hover:bg-white/15"
+                  ? "bg-white/80 text-slate-900 hover:bg-white shadow-sm"
+                  : "bg-slate-950/70 text-slate-200 hover:bg-slate-900"
               }`}
             >
-              <MapPin className="w-3.5 h-3.5" />
+              <MapPin className="w-3.5 h-3.5 text-cyan-500" />
               <span>
                 {gpsCoords ? t.locationSharedBtn : t.shareLocationBtn}
               </span>
@@ -476,14 +436,11 @@ export function InputConsole({
           </div>
 
           {gpsCoords && (
-            <div className="text-[11px] font-mono text-cyan-600 dark:text-cyan-300 flex items-center justify-between px-3 py-1">
+            <div className="text-[11px] font-mono text-cyan-700 dark:text-cyan-300 flex items-center justify-between px-2 py-0.5">
               <span>📍 GPS: {gpsCoords}</span>
               <button
                 type="button"
-                onClick={() => {
-                  setGpsCoords(null);
-                  onGpsChange(false);
-                }}
+                onClick={() => onGpsCoordsChange(null)}
                 className="underline text-[10px] cursor-pointer"
               >
                 {t.clearBtn}
@@ -498,7 +455,7 @@ export function InputConsole({
           )}
         </div>
 
-        {/* Photo Upload */}
+        {/* Photo Attachment */}
         <div>
           <input
             type="file"
@@ -512,8 +469,8 @@ export function InputConsole({
 
           {imageBase64 ? (
             <div
-              className={`rounded-2xl p-2.5 flex items-center space-x-3 ${
-                isLight ? "bg-slate-100" : "bg-white/5"
+              className={`rounded-2xl p-2.5 flex items-center space-x-3 backdrop-blur-md ${
+                isLight ? "bg-white/80 shadow-sm" : "bg-slate-950/70"
               }`}
             >
               <img
@@ -522,12 +479,12 @@ export function InputConsole({
                 className="w-12 h-12 object-cover rounded-xl"
               />
               <div className="flex-1 min-w-0">
-                <div className="text-xs font-semibold truncate">
+                <div className="text-xs font-bold truncate">
                   {t.photoReadyLabel}
                 </div>
                 <div
                   className={`text-[10px] ${
-                    isLight ? "text-slate-500" : "text-slate-400"
+                    isLight ? "text-slate-600" : "text-slate-400"
                   }`}
                 >
                   {t.photoUncertaintyNote}
@@ -535,10 +492,7 @@ export function InputConsole({
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  setImageBase64(null);
-                  setImageMimeType(null);
-                }}
+                onClick={() => onImageChange(null, null)}
                 aria-label="Remove photo"
                 className="p-1.5 rounded-full hover:bg-red-500/20 text-slate-400 hover:text-red-500 transition cursor-pointer"
               >
@@ -549,10 +503,10 @@ export function InputConsole({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className={`w-full rounded-2xl py-2.5 px-4 text-xs font-medium flex items-center justify-center gap-2 transition cursor-pointer ${
+              className={`w-full rounded-2xl py-2.5 px-4 text-xs font-semibold flex items-center justify-center gap-2 backdrop-blur-md transition cursor-pointer ${
                 isLight
-                  ? "bg-slate-100/90 hover:bg-slate-200/80 text-slate-700"
-                  : "bg-white/5 hover:bg-white/10 text-slate-300"
+                  ? "bg-white/75 hover:bg-white text-slate-800 shadow-sm"
+                  : "bg-slate-950/65 hover:bg-slate-900/80 text-slate-200"
               }`}
             >
               <UploadCloud className="w-4 h-4 text-cyan-500" />
@@ -564,35 +518,97 @@ export function InputConsole({
         {errorMessage && (
           <div
             role="alert"
-            className="p-3 rounded-2xl bg-red-500/15 text-red-600 dark:text-red-300 text-xs font-medium"
+            className="p-3 rounded-2xl bg-red-600 text-white text-xs font-medium"
           >
             {errorMessage}
           </div>
         )}
 
-        {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full py-3.5 px-5 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs tracking-wide uppercase shadow-md transition transform active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 cursor-pointer"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>{t.analyzingBtn}</span>
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4" />
-              <span>{t.analyzeBtn}</span>
-            </>
+        {/* Submit / Cancel Buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="flex-1 py-3.5 px-5 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs tracking-wide uppercase shadow-md transition transform active:scale-98 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center space-x-2 cursor-pointer"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>{t.analyzingBtn}</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                <span>{t.analyzeBtn}</span>
+              </>
+            )}
+          </button>
+
+          {isLoading && (
+            <button
+              type="button"
+              onClick={onCancelAnalysis}
+              className="py-3.5 px-4 rounded-full bg-red-600/90 hover:bg-red-600 text-white text-xs font-bold transition cursor-pointer shrink-0"
+            >
+              {t.cancelAnalysisBtn}
+            </button>
           )}
-        </button>
+        </div>
       </form>
 
+      {/* Optional Fictional Test Scenarios (Translated into Selected Language) */}
+      <div className="space-y-2 pt-2">
+        <span
+          className={`text-[11px] font-bold uppercase tracking-wider block ${
+            isLight ? "text-slate-600" : "text-slate-400"
+          }`}
+        >
+          {t.demoSectionTitle}
+        </span>
+        <div className="grid grid-cols-1 gap-1.5">
+          {PRESET_SCENARIOS.map((p) => {
+            const loc = p.localized[language] || p.localized["en-IN"];
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => handleSelectPreset(p)}
+                className={`text-left px-3.5 py-2 rounded-2xl backdrop-blur-md transition cursor-pointer flex items-center justify-between ${
+                  isLight
+                    ? "bg-white/65 hover:bg-white/90 text-slate-900 shadow-2xs"
+                    : "bg-slate-950/55 hover:bg-slate-900/75 text-slate-100"
+                }`}
+              >
+                <div className="pr-2">
+                  <div className={`text-xs font-bold ${p.accentColor}`}>
+                    {loc.title}
+                  </div>
+                  <div
+                    className={`text-[11px] ${
+                      isLight ? "text-slate-600" : "text-slate-400"
+                    }`}
+                  >
+                    {loc.subtitle}
+                  </div>
+                </div>
+                <span
+                  className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full shrink-0 ${
+                    isLight
+                      ? "bg-slate-900/10 text-slate-800"
+                      : "bg-white/10 text-cyan-300"
+                  }`}
+                >
+                  {t.loadScenario}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Emergency First Direct Call Link */}
-      <div className="pt-2 flex items-center justify-between gap-2 text-xs">
-        <span className={isLight ? "text-slate-600" : "text-slate-400"}>
+      <div className="pt-1 flex items-center justify-between gap-2 text-xs">
+        <span className={isLight ? "text-slate-700" : "text-slate-300"}>
           {t.immediateDangerNote}
         </span>
         <a

@@ -61,7 +61,9 @@ export interface UIStrings {
   photoUncertaintyNote: string;
   analyzeBtn: string;
   analyzingBtn: string;
+  cancelAnalysisBtn: string;
   immediateDangerNote: string;
+  draftModifiedNotice: string;
 
   // Voice states
   voiceReady: string;
@@ -73,7 +75,12 @@ export interface UIStrings {
   voiceFailed: string;
   voiceUnsupported: string;
 
-  // Results / Emergency-First Output
+  // Results / Solution-First Output
+  analyzingSnapshotTitle: string;
+  analyzingSnapshotSub: string;
+  resultForInputLabel: string;
+  translateResultPrompt: string;
+  translateResultBtn: string;
   uncertaintyBanner: string;
   urgencyAdvisoryNote: string;
   urgencyLabels: {
@@ -85,6 +92,9 @@ export interface UIStrings {
     NON_EMERGENCY: string;
   };
   whatToDoNowHeading: string;
+  importantQuestionHeading: string;
+  answerQuestionPlaceholder: string;
+  answerQuestionBtn: string;
   copyBriefBtn: string;
   copiedBriefBtn: string;
   shareSmsBtn: string;
@@ -94,14 +104,19 @@ export interface UIStrings {
 
   // Detailed View Sections
   summaryAndLocationHeading: string;
+  locationFieldLabel: string;
+  peopleFieldLabel: string;
   evidenceMatrixHeading: string;
   reportedInfoCol: string;
   reportedInfoSub: string;
+  imageObservationsCol: string;
   aiRisksCol: string;
   aiRisksSub: string;
   missingInfoCol: string;
   missingInfoSub: string;
   evidenceTraceHeading: string;
+  sourceQuoteLabel: string;
+  uncertaintyNoteLabel: string;
   correctionHeading: string;
   correctionPlaceholder: string;
   updateAnalysisBtn: string;
@@ -116,6 +131,7 @@ export interface UIStrings {
   historyHeading: string;
   historyEmpty: string;
   newAnalysisBtn: string;
+  viewHistoricalReportBtn: string;
 }
 
 export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
@@ -159,9 +175,9 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
     clearBtn: "Clear",
     demoSectionTitle: "Fictional Test Scenarios",
     loadScenario: "Load",
-    whatHappenedLabel: "What happened? (Review before analyzing)",
+    whatHappenedLabel: "What is happening right now?",
     inputPlaceholder:
-      "Example: Basement mein paani bhar gaya hai aur meter se sparks aa rahe hain...",
+      "Type any situation (e.g., I am seeing a road accident, what should I do?)",
     locationLabel: "Location or Landmark (Optional)",
     locationPlaceholder: "Street, building name, floor, or highway landmark...",
     shareLocationBtn: "Share My Location",
@@ -171,7 +187,10 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
     photoUncertaintyNote: "AI visual observations may contain uncertainty.",
     analyzeBtn: "Analyze with Gemini",
     analyzingBtn: "Analyzing with Gemini...",
+    cancelAnalysisBtn: "Cancel",
     immediateDangerNote: "In immediate danger? Do not wait for analysis.",
+    draftModifiedNotice:
+      "You edited the description. Click 'Analyze with Gemini' to analyze this new input.",
 
     voiceReady: "Voice Input",
     voiceRequesting: "Requesting Mic...",
@@ -184,6 +203,13 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
     voiceUnsupported:
       "Browser speech recognition is not supported on this device. Please type below.",
 
+    analyzingSnapshotTitle: "Analyzing Your Current Input with Gemini...",
+    analyzingSnapshotSub:
+      "Generating situation-specific safety steps and checking evidence...",
+    resultForInputLabel: "Analysis for submitted input:",
+    translateResultPrompt:
+      "This analysis was generated in another language.",
+    translateResultBtn: "Translate Result to English",
     uncertaintyBanner:
       "Based on the details provided; the incident has not been independently verified.",
     urgencyAdvisoryNote: "Advisory assessment — not certified medical/emergency triage",
@@ -196,25 +222,33 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
       NON_EMERGENCY: "Low / No Emergency Established",
     },
     whatToDoNowHeading: "What To Do Right Now",
+    importantQuestionHeading: "Most Important Follow-Up Question",
+    answerQuestionPlaceholder: "Type your answer here to update guidance...",
+    answerQuestionBtn: "Answer & Update",
     copyBriefBtn: "Copy Emergency Brief",
     copiedBriefBtn: "Brief Copied",
     shareSmsBtn: "SMS Brief",
     shareWhatsappBtn: "WhatsApp Brief",
-    quickViewTab: "Quick View (Immediate Steps)",
-    detailedViewTab: "Detailed View (Evidence & Trace)",
+    quickViewTab: "Quick View",
+    detailedViewTab: "Detailed Evidence",
 
-    summaryAndLocationHeading: "Incident Summary & Rationale",
+    summaryAndLocationHeading: "Incident Summary & Context",
+    locationFieldLabel: "Location:",
+    peopleFieldLabel: "People Affected:",
     evidenceMatrixHeading: "Evidence & Uncertainty Matrix",
     reportedInfoCol: "Reported Information",
-    reportedInfoSub: "Directly stated by user or observed in media",
+    reportedInfoSub: "Directly stated by user",
+    imageObservationsCol: "Image Observations",
     aiRisksCol: "AI-Identified Risks",
     aiRisksSub: "Possible interpretations — not confirmed facts",
     missingInfoCol: "Missing Information",
     missingInfoSub: "Important unanswered questions",
     evidenceTraceHeading: "Evidence Trace (Inspect Source)",
+    sourceQuoteLabel: "Supporting Source:",
+    uncertaintyNoteLabel: "Uncertainty:",
     correctionHeading: "Correct or Add Details",
     correctionPlaceholder:
-      'Example: "They are on the second floor, not in the basement."',
+      'Example: "No one is hurt, or landmark is near MG Road metro."',
     updateAnalysisBtn: "Update Analysis",
     updatingAnalysisBtn: "Updating...",
     warningsHeading: "Safety Warnings (Avoid Doing)",
@@ -222,12 +256,13 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
     nonDispatchDisclaimer:
       "Sharing via SMS or WhatsApp does not automatically dispatch 112 services. Always call 112 directly.",
 
-    readyTitle: "Ready for Incident Analysis",
+    readyTitle: "Ready to Analyze Your Situation",
     readyDescription:
-      "Select a fictional scenario on the left or describe your situation to receive immediate, structured safety steps.",
+      "Enter any real-world situation on the left or choose a test scenario, then press Analyze with Gemini.",
     historyHeading: "Session History",
     historyEmpty: "No incidents analyzed in this session yet.",
     newAnalysisBtn: "+ New Analysis",
+    viewHistoricalReportBtn: "View Snapshot",
   },
 
   "hi-IN": {
@@ -239,7 +274,7 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
     call112: "112 पर कॉल करें",
     themeLight: "लाइट",
     themeDark: "डार्क",
-    view3D: "3D दृश्य",
+    view3D: "3D कोर",
     view2D: "2D लाइट",
 
     heroHeadlinePart1: "मानवीय घबराहट से",
@@ -270,9 +305,9 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
     clearBtn: "साफ़ करें",
     demoSectionTitle: "काल्पनिक परीक्षण परिदृश्य (डेमो)",
     loadScenario: "चुनें",
-    whatHappenedLabel: "क्या हुआ है? (विश्लेषण से पहले जांचें)",
+    whatHappenedLabel: "अभी क्या हो रहा है?",
     inputPlaceholder:
-      "उदाहरण: अपार्टमेंट के बेसमेंट में पानी भर गया है और बिजली के मीटर से चिंगारी निकल रही है...",
+      "कोई भी स्थिति लिखें (उदाहरण: मैं अभी एक सड़क दुर्घटना देख रहा हूँ, मुझे क्या करना चाहिए?)",
     locationLabel: "स्थान या लैंडमार्क (वैकल्पिक)",
     locationPlaceholder: "गली, इमारत का नाम, मंज़िल या हाईवे लैंडमार्क लिखें...",
     shareLocationBtn: "मेरी लोकेशन साझा करें",
@@ -282,7 +317,10 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
     photoUncertaintyNote: "फोटो के AI विश्लेषण में अनिश्चितता हो सकती है।",
     analyzeBtn: "Gemini से विश्लेषण करें",
     analyzingBtn: "Gemini विश्लेषण कर रहा है...",
+    cancelAnalysisBtn: "रद्द करें",
     immediateDangerNote: "तत्काल खतरे में हैं? AI का इंतज़ार न करें।",
+    draftModifiedNotice:
+      "आपने विवरण बदला है। नए विवरण के समाधान के लिए 'Gemini से विश्लेषण करें' दबाएं।",
 
     voiceReady: "बोलकर लिखें",
     voiceRequesting: "माइक अनुमति...",
@@ -295,6 +333,12 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
     voiceUnsupported:
       "इस ब्राउज़र में वॉइस इनपुट समर्थित नहीं है। कृपया नीचे टाइप करें।",
 
+    analyzingSnapshotTitle: "Gemini आपके वर्तमान विवरण का विश्लेषण कर रहा है...",
+    analyzingSnapshotSub:
+      "स्थिति के अनुसार तुरंत सुरक्षा कदम तैयार किए जा रहे हैं...",
+    resultForInputLabel: "इस विवरण का परिणाम:",
+    translateResultPrompt: "यह परिणाम किसी अन्य भाषा में तैयार किया गया था।",
+    translateResultBtn: "हिंदी में अनुवाद करें",
     uncertaintyBanner:
       "दी गई जानकारी पर आधारित; इस घटना की स्वतंत्र रूप से पुष्टि नहीं हुई है।",
     urgencyAdvisoryNote: "सलाहकार मूल्यांकन — प्रमाणित मेडिकल ट्रायज नहीं",
@@ -307,25 +351,33 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
       NON_EMERGENCY: "कोई आपातकाल नहीं",
     },
     whatToDoNowHeading: "अभी तुरंत क्या करें",
+    importantQuestionHeading: "सबसे महत्वपूर्ण अगला प्रश्न",
+    answerQuestionPlaceholder: "अपना उत्तर यहाँ लिखें...",
+    answerQuestionBtn: "उत्तर जोड़ें",
     copyBriefBtn: "रिपोर्ट कॉपी करें",
     copiedBriefBtn: "कॉपी हो गया",
     shareSmsBtn: "SMS भेजें",
     shareWhatsappBtn: "WhatsApp साझा करें",
-    quickViewTab: "त्वरित दृश्य (तुरंत कदम)",
-    detailedViewTab: "विस्तृत दृश्य (तथ्य और प्रमाण)",
+    quickViewTab: "त्वरित समाधान",
+    detailedViewTab: "विस्तृत प्रमाण",
 
-    summaryAndLocationHeading: "घटना का सारांश और कारण",
+    summaryAndLocationHeading: "घटना का सारांश और स्थान",
+    locationFieldLabel: "स्थान:",
+    peopleFieldLabel: "प्रभावित लोग:",
     evidenceMatrixHeading: "तथ्य और अनिश्चितता तालिका",
     reportedInfoCol: "बताई गई जानकारी",
     reportedInfoSub: "उपयोगकर्ता द्वारा सीधे बताया गया",
+    imageObservationsCol: "फोटो से प्राप्त निरीक्षण",
     aiRisksCol: "AI द्वारा पहचाने गए जोखिम",
     aiRisksSub: "संभावित खतरे — पुष्ट तथ्य नहीं",
     missingInfoCol: "अधूरी जानकारी",
     missingInfoSub: "महत्वपूर्ण अनुत्तरित प्रश्न",
     evidenceTraceHeading: "प्रमाण स्रोत जांचें",
+    sourceQuoteLabel: "स्रोत कथन:",
+    uncertaintyNoteLabel: "अनिश्चितता:",
     correctionHeading: "जानकारी सुधारें या जोड़ें",
     correctionPlaceholder:
-      'उदाहरण: "वे दूसरी मंज़िल पर हैं, बेसमेंट में नहीं।"',
+      'उदाहरण: "कोई घायल नहीं है, या स्थान मेट्रो स्टेशन के पास है।"',
     updateAnalysisBtn: "विश्लेषण अपडेट करें",
     updatingAnalysisBtn: "अपडेट हो रहा है...",
     warningsHeading: "सुरक्षा चेतावनियां (यह न करें)",
@@ -335,10 +387,11 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
 
     readyTitle: "विश्लेषण के लिए तैयार",
     readyDescription:
-      "बाईं ओर से एक डेमो परिदृश्य चुनें या अपनी स्थिति लिखें ताकि तुरंत सुरक्षा कदम मिल सकें।",
+      "बाईं ओर अपनी स्थिति लिखें या डेमो चुनें और तुरंत सुरक्षा कदम प्राप्त करें।",
     historyHeading: "सत्र इतिहास",
     historyEmpty: "इस सत्र में अभी तक कोई विश्लेषण नहीं किया गया है।",
     newAnalysisBtn: "+ नया विश्लेषण",
+    viewHistoricalReportBtn: "रिपोर्ट देखें",
   },
 
   "mr-IN": {
@@ -381,9 +434,9 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
     clearBtn: "पुसा",
     demoSectionTitle: "काल्पनिक चाचणी उदाहरणे (डेमो)",
     loadScenario: "निवडा",
-    whatHappenedLabel: "काय घडले आहे? (विश्लेषणापूर्वी तपासा)",
+    whatHappenedLabel: "आता काय घडत आहे?",
     inputPlaceholder:
-      "उदाहरण: इमारतीच्या तळघरात पाणी साचले आहे आणि इलेक्ट्रिक मीटरमधून ठिणग्या येत आहेत...",
+      "कोणतीही परिस्थिती लिहा (उदा. मी आत्ता रस्त्यावर अपघात पाहत आहे, मी काय करावे?)",
     locationLabel: "ठिकाण किंवा लँडमार्क (ऐच्छिक)",
     locationPlaceholder: "रस्ता, इमारतीचे नाव, मजला किंवा महामार्ग खूण लिहा...",
     shareLocationBtn: "माझे लोकेशन शेअर करा",
@@ -393,7 +446,10 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
     photoUncertaintyNote: "फोटोच्या AI निरीक्षणात अनिश्चितता असू शकते.",
     analyzeBtn: "Gemini ने विश्लेषण करा",
     analyzingBtn: "Gemini विश्लेषण करत आहे...",
+    cancelAnalysisBtn: "रद्द करा",
     immediateDangerNote: "तातडीच्या धोक्यात आहात? AI ची वाट पाहू नका.",
+    draftModifiedNotice:
+      "तुम्ही वर्णन बदलले आहे. नवीन माहितीच्या विश्लेषणासाठी 'Gemini ने विश्लेषण करा' दाबा.",
 
     voiceReady: "आवाजाने टाइप करा",
     voiceRequesting: "माइक परवानगी...",
@@ -406,6 +462,12 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
     voiceUnsupported:
       "या ब्राउझरमध्ये व्हॉइस इनपुट उपलब्ध नाही. कृपया खाली टाइप करा.",
 
+    analyzingSnapshotTitle: "Gemini तुमच्या सध्याच्या माहितीचे विश्लेषण करत आहे...",
+    analyzingSnapshotSub:
+      "परिस्थितीनुसार तातडीची सुरक्षा पावले तयार केली जात आहेत...",
+    resultForInputLabel: "या माहितीसाठी विश्लेषण:",
+    translateResultPrompt: "हे विश्लेषण दुसऱ्या भाषेत तयार केले गेले होते.",
+    translateResultBtn: "मराठीत अनुवाद करा",
     uncertaintyBanner:
       "दिलेल्या माहितीवर आधारित; या घटनेची स्वतंत्रपणे पडताळणी झालेली नाही.",
     urgencyAdvisoryNote: "सल्लागार मूल्यांकन — प्रमाणित वैद्यकीय ट्रायज नाही",
@@ -418,25 +480,33 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
       NON_EMERGENCY: "आणीबाणी नाही",
     },
     whatToDoNowHeading: "आता ताबडतोब काय करावे",
+    importantQuestionHeading: "सर्वात महत्त्वाचा पुढील प्रश्न",
+    answerQuestionPlaceholder: "तुमचे उत्तर येथे लिहा...",
+    answerQuestionBtn: "उत्तर जोडा",
     copyBriefBtn: "अहवाल कॉपी करा",
     copiedBriefBtn: "कॉपी झाले",
     shareSmsBtn: "SMS तयार करा",
     shareWhatsappBtn: "WhatsApp शेअर",
-    quickViewTab: "जलद दृश्य (तातडीची पावले)",
-    detailedViewTab: "सविस्तर दृश्य (तथ्य आणि पुरावे)",
+    quickViewTab: "जलद उपाय",
+    detailedViewTab: "सविस्तर पुरावे",
 
-    summaryAndLocationHeading: "घटना सारांश आणि कारण",
+    summaryAndLocationHeading: "घटना सारांश आणि ठिकाण",
+    locationFieldLabel: "ठिकाण:",
+    peopleFieldLabel: "बाधित व्यक्ती:",
     evidenceMatrixHeading: "तथ्य आणि अनिश्चितता तक्ता",
     reportedInfoCol: "दिलेली माहिती",
-    reportedInfoSub: "वापरकर्त्याने सांगितलेली किंवा फोटोतील माहिती",
+    reportedInfoSub: "वापरकर्त्याने थेट सांगितलेली माहिती",
+    imageObservationsCol: "फोटोमधील निरीक्षणे",
     aiRisksCol: "AI ने ओळखलेले धोके",
     aiRisksSub: "संभाव्य अंदाज — सिद्ध झालेले तथ्य नाही",
     missingInfoCol: "अपूर्ण माहिती",
     missingInfoSub: "महत्त्वाचे अनुत्तरित प्रश्न",
     evidenceTraceHeading: "पुराव्याचा स्रोत तपासा",
+    sourceQuoteLabel: "स्रोत वाक्य:",
+    uncertaintyNoteLabel: "अनिश्चितता:",
     correctionHeading: "माहिती सुधारा किंवा जोडा",
     correctionPlaceholder:
-      'उदाहरण: "ते दुसऱ्या मजल्यावर आहेत, तळघरात नाहीत."',
+      'उदाहरण: "कोणीही जखमी नाही, किंवा ठिकाण शिवाजीनगर जवळ आहे."',
     updateAnalysisBtn: "विश्लेषण अपडेट करा",
     updatingAnalysisBtn: "अपडेट होत आहे...",
     warningsHeading: "सुरक्षा इशारे (हे करू नका)",
@@ -446,10 +516,11 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
 
     readyTitle: "विश्लेषणासाठी तयार",
     readyDescription:
-      "डावीकडील चाचणी उदाहरण निवडा किंवा तुमची परिस्थिती लिहा जेणेकरून तातडीची सुरक्षा पावले मिळतील.",
+      "डावीकडे तुमची परिस्थिती लिहा किंवा चाचणी उदाहरण निवडा आणि तातडीची सुरक्षा पावले मिळवा.",
     historyHeading: "सत्र इतिहास",
     historyEmpty: "या सत्रात अद्याप कोणतेही विश्लेषण केलेले नाही.",
     newAnalysisBtn: "+ नवीन विश्लेषण",
+    viewHistoricalReportBtn: "अहवाल पहा",
   },
 
   "gu-IN": {
@@ -492,9 +563,9 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
     clearBtn: "સાફ કરો",
     demoSectionTitle: "કાલ્પનિક પરીક્ષણ દૃશ્યો (ડેમો)",
     loadScenario: "લોડ કરો",
-    whatHappenedLabel: "શું થયું છે? (વિશ્લેષણ પહેલાં તપાસો)",
+    whatHappenedLabel: "અત્યારે શું થઈ રહ્યું છે?",
     inputPlaceholder:
-      "ઉદાહરણ: એપાર્ટમેન્ટના બેઝમેન્ટમાં પાણી ભરાઈ ગયું છે અને ઇલેક્ટ્રિક મીટરમાંથી તણખા નીકળે છે...",
+      "કોઈપણ પરિસ્થિતિ લખો (ઉદાહરણ: હું અત્યારે રોડ અકસ્માત જોઈ રહ્યો છું, મારે શું કરવું જોઈએ?)",
     locationLabel: "સ્થળ અથવા લેન્ડમાર્ક (વૈકલ્પિક)",
     locationPlaceholder: "શેરી, બિલ્ડિંગનું નામ, માળ અથવા હાઇવે લેન્ડમાર્ક લખો...",
     shareLocationBtn: "મારું લોકેશન શેર કરો",
@@ -504,7 +575,10 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
     photoUncertaintyNote: "ફોટોના AI અવલોકનમાં અનિશ્ચિતતા હોઈ શકે છે.",
     analyzeBtn: "Gemini થી વિશ્લેષણ કરો",
     analyzingBtn: "Gemini વિશ્લેષણ કરી રહ્યું છે...",
+    cancelAnalysisBtn: "રદ કરો",
     immediateDangerNote: "તાત્કાલિક જોખમમાં છો? AI ની રાહ ન જુઓ.",
+    draftModifiedNotice:
+      "તમે વિગત બદલી છે. નવી વિગતના વિશ્લેષણ માટે 'Gemini થી વિશ્લેષણ કરો' દબાવો.",
 
     voiceReady: "બોલીને લખો",
     voiceRequesting: "માઇક પરવાનગી...",
@@ -517,6 +591,12 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
     voiceUnsupported:
       "આ બ્રાઉઝરમાં વૉઇસ ઇનપુટ ઉપલબ્ધ નથી. કૃપા કરીને નીચે ટાઇપ કરો.",
 
+    analyzingSnapshotTitle: "Gemini તમારી વર્તમાન વિગતોનું વિશ્લેષણ કરી રહ્યું છે...",
+    analyzingSnapshotSub:
+      "પરિસ્થિતિ મુજબ તાત્કાલિક સુરક્ષા પગલાં તૈયાર થઈ રહ્યા છે...",
+    resultForInputLabel: "આ વિગત માટે વિશ્લેષણ:",
+    translateResultPrompt: "આ વિશ્લેષણ અન્ય ભાષામાં તૈયાર કરવામાં આવ્યું હતું.",
+    translateResultBtn: "ગુજરાતીમાં અનુવાદ કરો",
     uncertaintyBanner:
       "આપેલી વિગતોના આધારે; આ ઘટનાની સ્વતંત્ર રીતે ખરાઈ થયેલ નથી.",
     urgencyAdvisoryNote: "સલાહકાર મૂલ્યાંકન — પ્રમાણિત મેડિકલ ટ્રાયેજ નથી",
@@ -529,26 +609,34 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
       NON_EMERGENCY: "કોઈ કટોકટી નથી",
     },
     whatToDoNowHeading: "અત્યારે તરત શું કરવું",
+    importantQuestionHeading: "સૌથી મહત્વપૂર્ણ પ્રશ્ન",
+    answerQuestionPlaceholder: "તમારો જવાબ અહીં લખો...",
+    answerQuestionBtn: "જવાબ ઉમેરો",
     copyBriefBtn: "અહેવાલ કોપી કરો",
     copiedBriefBtn: "કોપી થઈ ગયું",
     shareSmsBtn: "SMS તૈયાર કરો",
     shareWhatsappBtn: "WhatsApp શેર",
-    quickViewTab: "ઝડપી દૃશ્ય (તાત્કાલિક પગલાં)",
-    detailedViewTab: "વિગતવાર દૃશ્ય (પુરાવા અને સ્રોત)",
+    quickViewTab: "ઝડપી ઉકેલ",
+    detailedViewTab: "વિગતવાર પુરાવા",
 
-    summaryAndLocationHeading: "ઘટનાનો સારાંશ અને કારણ",
+    summaryAndLocationHeading: "ઘટનાનો સારાંશ અને સ્થળ",
+    locationFieldLabel: "સ્થળ:",
+    peopleFieldLabel: "અસરગ્રસ્ત લોકો:",
     evidenceMatrixHeading: "પુરાવા અને અનિશ્ચિતતા કોષ્ટક",
     reportedInfoCol: "જણાવેલી માહિતી",
     reportedInfoSub: "વપરાશકર્તા દ્વારા સીધી જણાવેલી વિગતો",
+    imageObservationsCol: "ફોટોમાંથી મળેલા અવલોકનો",
     aiRisksCol: "AI દ્વારા ઓળખાયેલા જોખમો",
     aiRisksSub: "સંભવિત અનુમાનો — પુષ્ટિ થયેલ હકીકત નથી",
     missingInfoCol: "ખૂટતી માહિતી",
     missingInfoSub: "મહત્વપૂર્ણ અનુત્તરિત પ્રશ્નો",
     evidenceTraceHeading: "પુરાવાનો સ્રોત તપાસો",
+    sourceQuoteLabel: "સ્રોત વાક્ય:",
+    uncertaintyNoteLabel: "અનિશ્ચિતતા:",
     correctionHeading: "વિગતો સુધારો અથવા ઉમેરો",
     correctionPlaceholder:
-      'ઉદાહરણ: "તેઓ બીજા માળે છે, બેઝમેન્ટમાં નહીં."',
-    updateAnalysisBtn: "વિશ્લેષણ અપડેટ કરો",
+      'ઉદાહરણ: "કોઈને ઈજા થઈ નથી, અથવા સ્થળ હાઇવે સર્કલ પાસે છે."',
+    updateAnalysisBtn: "વિश्लेષણ અપડેટ કરો",
     updatingAnalysisBtn: "અપડેટ થઈ રહ્યું છે...",
     warningsHeading: "સુરક્ષા ચેતવણીઓ (આ ન કરો)",
     editableBriefHeading: "112 કટોકટી સંક્ષિપ્ત અહેવાલ",
@@ -557,9 +645,10 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UIStrings> = {
 
     readyTitle: "વિશ્લેષણ માટે તૈયાર",
     readyDescription:
-      "ડાબી બાજુથી એક ડેમો દૃશ્ય પસંદ કરો અથવા તમારી પરિસ્થિતિ લખો જેથી તાત્કાલિક સુરક્ષા પગલાં મળી શકે.",
+      "ડાબી બાજુ તમારી પરિસ્થિતિ લખો અથવા ડેમો દૃશ્ય પસંદ કરો જેથી તાત્કાલિક સુરક્ષા પગલાં મળી શકે.",
     historyHeading: "સત્ર ઇતિહાસ",
     historyEmpty: "આ સત્રમાં હજુ સુધી કોઈ વિશ્લેષણ કરવામાં આવ્યું નથી.",
     newAnalysisBtn: "+ નવું વિશ્લેષણ",
+    viewHistoricalReportBtn: "અહેવાલ જુઓ",
   },
 };

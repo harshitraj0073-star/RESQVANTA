@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { TriageReport } from '@/types/triage';
+import type { TriageReport } from '../types/triage';
 
 export const SeverityLevelSchema = z.enum([
   'CRITICAL',
@@ -19,11 +19,16 @@ export const EvidenceTraceItemSchema = z.object({
 });
 
 export const TriageReportSchema = z.object({
+  requestId: z.string().min(1),
+  submittedTextSnapshot: z.string(),
+  submittedAt: z.string(),
+  hasImageSnapshot: z.boolean().optional(),
   is_valid_emergency: z.boolean(),
   incident_title: z.string().min(1),
   incident_category: z.string().min(1),
   severity_level: SeverityLevelSchema,
   urgency_rationale: z.string().min(1),
+  important_question: z.string().optional(),
   executive_summary: z.string().min(1),
   location_status: z.object({
     detected_location: z.string(),
@@ -35,6 +40,7 @@ export const TriageReportSchema = z.object({
   }),
   verification_matrix: z.object({
     user_reported_facts: z.array(z.string()),
+    image_observations: z.array(z.string()).default([]),
     ai_visual_or_context_inferences: z.array(z.string()),
     missing_critical_info: z.array(z.string()),
   }),
@@ -47,6 +53,7 @@ export const TriageReportSchema = z.object({
         rationale: z.string(),
       })
     )
+    .min(1)
     .max(3),
   critical_warnings: z.array(z.string()),
   recommended_authorities: z.array(
@@ -63,9 +70,21 @@ export const TriageReportSchema = z.object({
 });
 
 export function validateTriageReport(data: unknown): TriageReport {
-  const raw = data as any;
-  if (Array.isArray(raw?.immediate_actions) && raw.immediate_actions.length > 3) {
+  const raw = { ...(data as Record<string, any>) };
+  if (Array.isArray(raw.immediate_actions) && raw.immediate_actions.length > 3) {
     raw.immediate_actions = raw.immediate_actions.slice(0, 3);
+  }
+  if (!raw.requestId) {
+    raw.requestId = `req_${Date.now()}`;
+  }
+  if (typeof raw.submittedTextSnapshot !== 'string') {
+    raw.submittedTextSnapshot = '';
+  }
+  if (!raw.submittedAt) {
+    raw.submittedAt = new Date().toISOString();
+  }
+  if (raw.verification_matrix && !Array.isArray(raw.verification_matrix.image_observations)) {
+    raw.verification_matrix.image_observations = [];
   }
   return TriageReportSchema.parse(raw) as TriageReport;
 }

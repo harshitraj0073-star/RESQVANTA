@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { TopNav } from "@/components/ui/TopNav";
 import { InputConsole } from "@/components/ui/InputConsole";
@@ -8,10 +8,7 @@ import { ActionCard } from "@/components/ui/ActionCard";
 import { TriageReport, SeverityLevel } from "@/types/triage";
 import { PRESET_SCENARIOS } from "@/lib/presets";
 import { CORE_HOTSPOTS } from "@/components/scene/HolographicCore";
-import {
-  SupportedLanguage,
-  UI_TRANSLATIONS,
-} from "@/lib/translations";
+import { SupportedLanguage, UI_TRANSLATIONS } from "@/lib/translations";
 import { GEMINI_MODEL_ID } from "@/lib/geminiSchema";
 import {
   ArrowRight,
@@ -19,6 +16,7 @@ import {
   PhoneCall,
   Layers,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 
 const SceneCanvas = dynamic(() => import("@/components/scene/SceneCanvas"), {
@@ -26,19 +24,29 @@ const SceneCanvas = dynamic(() => import("@/components/scene/SceneCanvas"), {
   loading: () => <div className="w-full h-full" />,
 });
 
+type AnalysisLifecycle = "idle" | "validating" | "analyzing" | "success" | "error";
+
 export default function ResQvantaApp() {
   const [viewMode, setViewMode] = useState<"hero" | "workspace" | "radar">(
     "hero"
   );
-  // Default to Light Mode unless user already saved a preference
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [is3DMode, setIs3DMode] = useState(true);
   const [activeHotspot, setActiveHotspot] = useState<string | null>(
     "multimodal"
   );
   const [language, setLanguage] = useState<SupportedLanguage>("en-IN");
-  const [gpsActive, setGpsActive] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+
+  // Unified Controlled Draft State
+  const [inputText, setInputText] = useState("");
+  const [manualLocation, setManualLocation] = useState("");
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
+  const [imageMimeType, setImageMimeType] = useState<string | null>(null);
+  const [gpsCoords, setGpsCoords] = useState<string | null>(null);
+
+  // Strict Analysis Lifecycle & Request Isolation
+  const [lifecycle, setLifecycle] = useState<AnalysisLifecycle>("idle");
+  const [pendingSnapshotText, setPendingSnapshotText] = useState<string>("");
   const [isResolving, setIsResolving] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
@@ -46,7 +54,10 @@ export default function ResQvantaApp() {
   const [incidentFeed, setIncidentFeed] = useState<TriageReport[]>([]);
   const [lastPayload, setLastPayload] = useState<any>(null);
 
-  // Sync persisted theme & language on mount
+  // Refs to guarantee zero race conditions or stale overwrites
+  const activeRequestIdRef = useRef<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   useEffect(() => {
     try {
       const savedTheme = localStorage.getItem("resqvanta_theme");
@@ -94,6 +105,7 @@ export default function ResQvantaApp() {
 
   const t = UI_TRANSLATIONS[language];
   const isLight = theme === "light";
+  const isLoading = lifecycle === "validating" || lifecycle === "analyzing";
 
   const coreStatus: "IDLE" | "SCANNING" | SeverityLevel = isLoading
     ? "SCANNING"
@@ -101,26 +113,77 @@ export default function ResQvantaApp() {
     ? triageReport.severity_level
     : "IDLE";
 
+  // Check if user modified the input draft after the current report was generated
+  const isDraftModified = Boolean(
+    triageReport &&
+      inputText.trim() &&
+      inputText.trim() !== lastPayload?.text?.trim()
+  );
+
+  const handleCancelAnalysis = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    activeRequestIdRef.current = null;
+    setLifecycle("idle");
+    setPendingSnapshotText("");
+  };
+
+  // Core Request Lifecycle: idle -> validating -> analyzing -> success / error
   const handleAnalyze = async (payload: {
     text: string;
     imageBase64: string | null;
     imageMimeType: string | null;
     gpsCoords: string | null;
     manualLocation?: string;
+    targetLangOverride?: SupportedLanguage;
   }) => {
-    if (isLoading) return;
-    setViewMode("workspace");
-    setIsLoading(true);
+    // 1. Cancel any obsolete in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // 2. Capture snapshot & generate unique request ID
+    setLifecycle("validating");
+    const cleanText = payload.text.trim();
+    const requestId = `req_${Date.now()}_${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
+    activeRequestIdRef.current = requestId;
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    // 3. Immediately clear any previous/stale report so old advice NEVER appears as current
+    setTriageReport(null);
     setApiError(null);
-    setLastPayload(payload);
+    setPendingSnapshotText(cleanText || "[Scene Photo]");
+    setLastPayload({
+      text: cleanText,
+      imageBase64: payload.imageBase64,
+      imageMimeType: payload.imageMimeType,
+      gpsCoords: payload.gpsCoords,
+      manualLocation: payload.manualLocation || "",
+    });
+    setViewMode("workspace");
+    setLifecycle("analyzing");
+
+    const effectiveLang = payload.targetLangOverride || language;
 
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
-          ...payload,
-          language,
+          requestId,
+          text: cleanText,
+          imageBase64: payload.imageBase64,
+          imageMimeType: payload.imageMimeType,
+          gpsCoords: payload.gpsCoords,
+          manualLocation: payload.manualLocation || "",
+          language: effectiveLang,
         }),
       });
 
@@ -132,15 +195,33 @@ export default function ResQvantaApp() {
       }
 
       const data: TriageReport = await res.json();
+
+      // 4. Verify response belongs to the latest active request
+      if (
+        activeRequestIdRef.current !== requestId ||
+        data.requestId !== requestId
+      ) {
+        return; // Discard obsolete response
+      }
+
       setTriageReport(data);
-      setIncidentFeed((prev) => [data, ...prev]);
+      setIncidentFeed((prev) => [
+        data,
+        ...prev.filter((item) => item.requestId !== data.requestId),
+      ]);
+      setLifecycle("success");
     } catch (err: any) {
+      if (err?.name === "AbortError") {
+        return;
+      }
+      if (activeRequestIdRef.current !== requestId) {
+        return;
+      }
+      setLifecycle("error");
       setApiError(
         err.message ||
           "Could not complete Gemini analysis. If this is an emergency, please call 112 immediately."
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -149,12 +230,18 @@ export default function ResQvantaApp() {
     setIsResolving(true);
     setApiError(null);
 
+    const requestId = `req_${Date.now()}_${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
+    activeRequestIdRef.current = requestId;
+
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...lastPayload,
+          requestId,
           followUpContext: additionalDetails,
           language,
         }),
@@ -165,13 +252,24 @@ export default function ResQvantaApp() {
         throw new Error(errData.error || "Failed to update analysis.");
       }
       const updatedData: TriageReport = await res.json();
+
+      if (activeRequestIdRef.current !== requestId) return;
+
       setTriageReport(updatedData);
-      setIncidentFeed((prev) => [updatedData, ...prev.slice(1)]);
+      setIncidentFeed((prev) => [updatedData, ...prev]);
     } catch (err: any) {
       setApiError(err.message || "Could not update report with correction.");
     } finally {
       setIsResolving(false);
     }
+  };
+
+  const handleTranslateActiveReport = () => {
+    if (!lastPayload) return;
+    handleAnalyze({
+      ...lastPayload,
+      targetLangOverride: language,
+    });
   };
 
   return (
@@ -210,25 +308,19 @@ export default function ResQvantaApp() {
         historyCount={incidentFeed.length}
       />
 
-      {/* 3. Open Borderless Content Layer */}
+      {/* 3. Truly Open-Canvas Floating Content Layer (No Bulky Opaque Panels) */}
       <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 md:px-8 py-6 flex flex-col justify-center pointer-events-none">
         {/* ==================== ACT 1: THE LUXURY ENTRANCE ==================== */}
         {viewMode === "hero" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center my-auto py-4">
-            {/* Left Floating Typography & Primary Actions */}
-            <div
-              className={`lg:col-span-7 space-y-5 pointer-events-auto rounded-3xl p-6 md:p-9 backdrop-blur-md transition-colors ${
-                isLight
-                  ? "bg-white/65 shadow-xl shadow-slate-900/5"
-                  : "bg-[#060a14]/60"
-              }`}
-            >
+            {/* Left Floating Typography (Open Canvas over 3D Core) */}
+            <div className="lg:col-span-7 space-y-5 pointer-events-auto py-4">
               <div className="flex flex-wrap items-center gap-2.5">
                 <span
-                  className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-mono font-semibold ${
+                  className={`inline-flex items-center space-x-1.5 px-3.5 py-1 rounded-full text-xs font-mono font-bold backdrop-blur-md ${
                     isLight
-                      ? "bg-cyan-600/10 text-cyan-800"
-                      : "bg-cyan-400/10 text-cyan-300"
+                      ? "bg-white/80 text-cyan-800 shadow-2xs"
+                      : "bg-slate-950/70 text-cyan-300"
                   }`}
                 >
                   <Sparkles className="w-3.5 h-3.5" />
@@ -238,7 +330,11 @@ export default function ResQvantaApp() {
                 </span>
               </div>
 
-              <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-[1.12]">
+              <h1
+                className={`text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.08] ${
+                  isLight ? "drop-shadow-xs" : "drop-shadow-md"
+                }`}
+              >
                 {t.heroHeadlinePart1}{" "}
                 <span
                   className={
@@ -252,8 +348,8 @@ export default function ResQvantaApp() {
               </h1>
 
               <p
-                className={`text-sm sm:text-base max-w-xl leading-relaxed ${
-                  isLight ? "text-slate-700" : "text-slate-300"
+                className={`text-sm sm:text-base max-w-xl font-medium leading-relaxed ${
+                  isLight ? "text-slate-700" : "text-slate-200"
                 }`}
               >
                 {t.heroSupportText}
@@ -264,8 +360,11 @@ export default function ResQvantaApp() {
                 <button
                   type="button"
                   onClick={() => {
+                    const demoText = PRESET_SCENARIOS[0].text;
+                    setInputText(demoText);
+                    setManualLocation("Fictional Demo Scenario A");
                     handleAnalyze({
-                      text: PRESET_SCENARIOS[0].text,
+                      text: demoText,
                       imageBase64: null,
                       imageMimeType: null,
                       gpsCoords: null,
@@ -280,10 +379,10 @@ export default function ResQvantaApp() {
                 <button
                   type="button"
                   onClick={() => setViewMode("workspace")}
-                  className={`px-6 py-3.5 rounded-full font-semibold text-xs transition flex items-center space-x-2 cursor-pointer ${
+                  className={`px-6 py-3.5 rounded-full font-bold text-xs backdrop-blur-md transition flex items-center space-x-2 cursor-pointer ${
                     isLight
-                      ? "bg-slate-900 text-white hover:bg-slate-800"
-                      : "bg-white/10 text-white hover:bg-white/20"
+                      ? "bg-slate-900 text-white hover:bg-slate-800 shadow-sm"
+                      : "bg-white/15 text-white hover:bg-white/25"
                   }`}
                 >
                   <span>{t.btnEnterWorkspace}</span>
@@ -292,8 +391,8 @@ export default function ResQvantaApp() {
               </div>
 
               {/* Emergency-First Skip Link */}
-              <div className="pt-2 flex flex-wrap items-center gap-3 text-xs">
-                <span className={isLight ? "text-slate-600" : "text-slate-400"}>
+              <div className="pt-2 flex flex-wrap items-center gap-3 text-xs font-medium">
+                <span className={isLight ? "text-slate-700" : "text-slate-300"}>
                   {t.emergencySkipPrompt}
                 </span>
                 <a
@@ -306,91 +405,83 @@ export default function ResQvantaApp() {
               </div>
             </div>
 
-            {/* Right Floating Hotspot Selector (Keyboard + Mobile Accessible) */}
+            {/* Right Floating Hotspot Selector */}
             <div className="lg:col-span-5 pointer-events-auto space-y-2.5">
-              <div
-                className={`rounded-3xl p-5 backdrop-blur-md space-y-3 ${
-                  isLight
-                    ? "bg-white/65 shadow-lg shadow-slate-900/5"
-                    : "bg-[#060a14]/60"
-                }`}
-              >
-                <div className="flex items-center justify-between px-1">
-                  <span
-                    className={`text-[11px] font-mono font-bold uppercase tracking-wider ${
-                      isLight ? "text-cyan-700" : "text-cyan-400"
-                    }`}
-                  >
-                    {t.hotspotsHeader}
-                  </span>
-                  <span className="text-[10px] font-mono opacity-60">
-                    {t.hotspotsHint}
-                  </span>
-                </div>
-
-                <div
-                  className="space-y-2"
-                  role="tablist"
-                  aria-label={t.hotspotsHeader}
+              <div className="flex items-center justify-between px-1">
+                <span
+                  className={`text-[11px] font-mono font-bold uppercase tracking-wider ${
+                    isLight ? "text-cyan-800" : "text-cyan-400"
+                  }`}
                 >
-                  {CORE_HOTSPOTS.map((spot) => {
-                    const isSelected = activeHotspot === spot.id;
-                    const title = t.hotspots[spot.titleKey];
-                    const desc = t.hotspots[spot.descKey];
-                    return (
-                      <button
-                        key={spot.id}
-                        type="button"
-                        role="tab"
-                        aria-selected={isSelected}
-                        onClick={() => setActiveHotspot(spot.id)}
-                        className={`w-full text-left p-3.5 rounded-2xl transition cursor-pointer ${
-                          isSelected
-                            ? isLight
-                              ? "bg-cyan-600 text-white shadow-sm"
-                              : "bg-cyan-500/20 text-white"
-                            : isLight
-                            ? "bg-slate-100/80 text-slate-700 hover:bg-slate-200/70"
-                            : "bg-white/5 text-slate-300 hover:bg-white/10"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 text-xs font-bold">
-                          <span
-                            className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
-                              isSelected
-                                ? isLight
-                                  ? "bg-white text-cyan-700"
-                                  : "bg-cyan-400 text-slate-950"
-                                : "bg-cyan-500/15 text-cyan-600 dark:text-cyan-300"
-                            }`}
-                          >
-                            {spot.label}
-                          </span>
-                          <span>{title}</span>
-                        </div>
-                        <p
-                          className={`text-xs mt-1 leading-relaxed ${
+                  {t.hotspotsHeader}
+                </span>
+                <span className="text-[10px] font-mono opacity-70">
+                  {t.hotspotsHint}
+                </span>
+              </div>
+
+              <div
+                className="space-y-2"
+                role="tablist"
+                aria-label={t.hotspotsHeader}
+              >
+                {CORE_HOTSPOTS.map((spot) => {
+                  const isSelected = activeHotspot === spot.id;
+                  const title = t.hotspots[spot.titleKey];
+                  const desc = t.hotspots[spot.descKey];
+                  return (
+                    <button
+                      key={spot.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={isSelected}
+                      onClick={() => setActiveHotspot(spot.id)}
+                      className={`w-full text-left p-4 rounded-2xl backdrop-blur-md transition cursor-pointer ${
+                        isSelected
+                          ? isLight
+                            ? "bg-cyan-600 text-white shadow-md"
+                            : "bg-cyan-500/25 text-white"
+                          : isLight
+                          ? "bg-white/75 text-slate-800 hover:bg-white/95 shadow-2xs"
+                          : "bg-slate-950/65 text-slate-200 hover:bg-slate-900/80"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 text-xs font-bold">
+                        <span
+                          className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
                             isSelected
                               ? isLight
-                                ? "text-cyan-50"
-                                : "text-slate-200"
-                              : isLight
-                              ? "text-slate-600"
-                              : "text-slate-400"
+                                ? "bg-white text-cyan-700"
+                                : "bg-cyan-400 text-slate-950"
+                              : "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300"
                           }`}
                         >
-                          {desc}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
+                          {spot.label}
+                        </span>
+                        <span>{title}</span>
+                      </div>
+                      <p
+                        className={`text-xs mt-1 leading-relaxed ${
+                          isSelected
+                            ? isLight
+                              ? "text-cyan-50"
+                              : "text-slate-100"
+                            : isLight
+                            ? "text-slate-600"
+                            : "text-slate-300"
+                        }`}
+                      >
+                        {desc}
+                      </p>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
         )}
 
-        {/* ==================== ACT 2 & 3: WORKSPACE & EMERGENCY-FIRST RESULTS ==================== */}
+        {/* ==================== ACT 2 & 3: WORKSPACE & SOLUTION-FIRST OUTPUT ==================== */}
         {viewMode === "workspace" && (
           <div className="space-y-4">
             {apiError && (
@@ -411,51 +502,109 @@ export default function ResQvantaApp() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Left Column: Multimodal Input Console */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              {/* Left Column: Open-Canvas Multimodal Input Console */}
               <div className="lg:col-span-5 pointer-events-auto">
                 <InputConsole
+                  inputText={inputText}
+                  onInputTextChange={setInputText}
+                  manualLocation={manualLocation}
+                  onManualLocationChange={setManualLocation}
+                  imageBase64={imageBase64}
+                  imageMimeType={imageMimeType}
+                  onImageChange={(b64, mime) => {
+                    setImageBase64(b64);
+                    setImageMimeType(mime);
+                  }}
+                  gpsCoords={gpsCoords}
+                  onGpsCoordsChange={setGpsCoords}
                   onAnalyze={handleAnalyze}
+                  onCancelAnalysis={handleCancelAnalysis}
                   isLoading={isLoading}
-                  onGpsChange={setGpsActive}
+                  isDraftModified={isDraftModified}
                   language={language}
                   theme={theme}
                   t={t}
                 />
               </div>
 
-              {/* Right Column: Emergency-First Action Card */}
+              {/* Right Column: Active Loading Snapshot OR Fresh Result OR Ready State */}
               <div className="lg:col-span-7 pointer-events-auto">
-                {triageReport ? (
+                {isLoading ? (
+                  /* HONEST LOADING STATE: Never displays an old incident while analyzing! */
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className={`rounded-3xl p-8 backdrop-blur-md space-y-5 ${
+                      isLight
+                        ? "bg-white/75 text-slate-900 shadow-sm"
+                        : "bg-slate-950/70 text-slate-100"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Loader2 className="w-6 h-6 animate-spin text-cyan-500 shrink-0" />
+                      <div>
+                        <h3 className="text-base font-extrabold">
+                          {t.analyzingSnapshotTitle}
+                        </h3>
+                        <p className="text-xs opacity-75">
+                          {t.analyzingSnapshotSub}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`p-4 rounded-2xl text-xs space-y-1 ${
+                        isLight ? "bg-slate-100/90" : "bg-white/5"
+                      }`}
+                    >
+                      <div className="font-bold text-cyan-600 dark:text-cyan-400">
+                        {t.resultForInputLabel}
+                      </div>
+                      <div className="italic">
+                        &ldquo;{pendingSnapshotText}&rdquo;
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 text-xs">
+                      <span>{t.immediateDangerNote}</span>
+                      <a
+                        href="tel:112"
+                        className="inline-flex items-center gap-1.5 bg-red-600 text-white font-bold px-4 py-2 rounded-full"
+                      >
+                        <PhoneCall className="w-3.5 h-3.5" />
+                        <span>{t.call112}</span>
+                      </a>
+                    </div>
+                  </div>
+                ) : triageReport ? (
                   <ActionCard
                     report={triageReport}
                     onResolveMissingInfo={handleResolveMissing}
+                    onTranslateActiveReport={handleTranslateActiveReport}
                     isResolving={isResolving}
+                    language={language}
                     theme={theme}
                     t={t}
                   />
                 ) : (
-                  <div
-                    className={`rounded-3xl p-8 text-center flex flex-col items-center justify-center min-h-[380px] space-y-4 backdrop-blur-md ${
-                      isLight
-                        ? "bg-white/65 text-slate-900 shadow-lg shadow-slate-900/5"
-                        : "bg-[#080d1a]/60 text-slate-100"
-                    }`}
-                  >
+                  <div className="py-12 px-6 text-center flex flex-col items-center justify-center min-h-[320px] space-y-3">
                     <div
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+                      className={`w-12 h-12 rounded-2xl backdrop-blur-md flex items-center justify-center ${
                         isLight
-                          ? "bg-cyan-600/10 text-cyan-700"
-                          : "bg-cyan-400/10 text-cyan-300"
+                          ? "bg-white/80 text-cyan-700 shadow-2xs"
+                          : "bg-slate-950/70 text-cyan-300"
                       }`}
                     >
                       <Layers className="w-6 h-6" />
                     </div>
-                    <div className="max-w-md space-y-1.5">
-                      <h3 className="text-base font-bold">{t.readyTitle}</h3>
+                    <div className="max-w-md space-y-1">
+                      <h3 className="text-base font-extrabold">
+                        {t.readyTitle}
+                      </h3>
                       <p
-                        className={`text-xs leading-relaxed ${
-                          isLight ? "text-slate-600" : "text-slate-400"
+                        className={`text-xs font-medium leading-relaxed ${
+                          isLight ? "text-slate-700" : "text-slate-300"
                         }`}
                       >
                         {t.readyDescription}
@@ -468,62 +617,67 @@ export default function ResQvantaApp() {
           </div>
         )}
 
-        {/* ==================== VIEW 3: COMPACT SESSION HISTORY ==================== */}
+        {/* ==================== VIEW 3: COMPACT FLOATING SESSION HISTORY ==================== */}
         {viewMode === "radar" && (
-          <div
-            className={`pointer-events-auto rounded-3xl p-6 md:p-8 backdrop-blur-md space-y-6 ${
-              isLight
-                ? "bg-white/75 text-slate-900 shadow-lg shadow-slate-900/5"
-                : "bg-[#080d1a]/70 text-slate-100"
-            }`}
-          >
+          <div className="pointer-events-auto space-y-5 py-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <h2 className="text-xl font-bold">{t.historyHeading}</h2>
+              <h2 className="text-2xl font-extrabold">{t.historyHeading}</h2>
               <button
                 type="button"
                 onClick={() => setViewMode("workspace")}
-                className="px-4 py-2 rounded-full bg-cyan-600 text-white text-xs font-bold hover:bg-cyan-500 transition cursor-pointer"
+                className="px-5 py-2.5 rounded-full bg-cyan-600 text-white text-xs font-bold hover:bg-cyan-500 transition cursor-pointer self-start"
               >
                 {t.newAnalysisBtn}
               </button>
             </div>
 
             {incidentFeed.length === 0 ? (
-              <div className="text-center py-12 opacity-65 text-xs">
+              <div className="py-12 opacity-75 text-xs font-medium">
                 {t.historyEmpty}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {incidentFeed.map((item, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => {
-                      setTriageReport(item);
-                      setViewMode("workspace");
-                    }}
-                    className={`text-left p-4 rounded-2xl transition cursor-pointer space-y-1.5 ${
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {incidentFeed.map((item) => (
+                  <div
+                    key={item.requestId}
+                    className={`p-4 rounded-2xl backdrop-blur-md transition space-y-2 ${
                       isLight
-                        ? "bg-slate-100 hover:bg-slate-200/80"
-                        : "bg-white/5 hover:bg-white/10"
+                        ? "bg-white/80 text-slate-900 shadow-2xs"
+                        : "bg-slate-950/70 text-slate-100"
                     }`}
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <span className="text-[10px] font-mono font-bold uppercase text-cyan-600 dark:text-cyan-400">
                         {t.urgencyLabels[item.severity_level] ||
                           item.severity_level}
                       </span>
-                      <span className="text-[10px] font-mono opacity-60">
-                        {item.incident_category}
+                      <span className="text-[10px] font-mono opacity-65">
+                        ID: {item.requestId.slice(-6)}
                       </span>
                     </div>
                     <div className="text-sm font-bold">
                       {item.incident_title}
                     </div>
-                    <p className="text-xs opacity-75 line-clamp-2">
-                      {item.urgency_rationale}
-                    </p>
-                  </button>
+                    <div className="text-xs italic opacity-80 truncate">
+                      &ldquo;{item.submittedTextSnapshot}&rdquo;
+                    </div>
+                    <div className="pt-1 flex items-center justify-between">
+                      <span className="text-[10px] font-mono opacity-65">
+                        {item.response_language || "en-IN"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // View historical snapshot without overwriting user's current unsaved draft unless desired
+                          setTriageReport(item);
+                          setViewMode("workspace");
+                        }}
+                        className="text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:underline cursor-pointer"
+                      >
+                        {t.viewHistoricalReportBtn} →
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -531,18 +685,18 @@ export default function ResQvantaApp() {
         )}
       </main>
 
-      {/* 4. Mobile & Desktop Minimal Footer */}
+      {/* 4. Minimal Footer */}
       <footer
         className={`relative z-10 py-3 px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs backdrop-blur-sm ${
           isLight
-            ? "bg-white/50 text-slate-600"
-            : "bg-[#04070f]/50 text-slate-400"
+            ? "bg-white/40 text-slate-700"
+            : "bg-[#04070f]/40 text-slate-300"
         }`}
       >
         <div>
           ResQvanta AI — {t.brandSubtitle} · {GEMINI_MODEL_ID}
         </div>
-        <div className="flex items-center space-x-4 font-medium">
+        <div className="flex items-center space-x-4 font-semibold">
           <button
             type="button"
             onClick={() => setViewMode("hero")}

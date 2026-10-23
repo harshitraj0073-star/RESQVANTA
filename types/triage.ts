@@ -15,11 +15,16 @@ export interface EvidenceTraceItem {
 }
 
 export interface TriageReport {
+  requestId: string;
+  submittedTextSnapshot: string;
+  submittedAt: string;
+  hasImageSnapshot?: boolean;
   is_valid_emergency: boolean;
   incident_title: string;
   incident_category: string;
   severity_level: SeverityLevel;
   urgency_rationale: string;
+  important_question?: string;
   executive_summary: string;
   location_status: {
     detected_location: string;
@@ -31,6 +36,7 @@ export interface TriageReport {
   };
   verification_matrix: {
     user_reported_facts: string[];
+    image_observations: string[];
     ai_visual_or_context_inferences: string[];
     missing_critical_info: string[];
   };

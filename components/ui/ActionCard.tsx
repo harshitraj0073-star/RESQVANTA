@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { TriageReport } from "@/types/triage";
-import { UIStrings } from "@/lib/translations";
+import { SupportedLanguage, UIStrings } from "@/lib/translations";
 import {
   CheckCircle2,
   AlertTriangle,
@@ -19,12 +19,16 @@ import {
   FileSearch,
   ChevronDown,
   ChevronUp,
+  Globe,
+  Camera,
 } from "lucide-react";
 
 interface ActionCardProps {
   report: TriageReport;
   onResolveMissingInfo: (additionalDetails: string) => void;
+  onTranslateActiveReport: () => void;
   isResolving: boolean;
+  language: SupportedLanguage;
   theme: "light" | "dark";
   t: UIStrings;
 }
@@ -32,12 +36,14 @@ interface ActionCardProps {
 export function ActionCard({
   report,
   onResolveMissingInfo,
+  onTranslateActiveReport,
   isResolving,
+  language,
   theme,
   t,
 }: ActionCardProps) {
-  // Default to Quick View so emergency instructions appear first without clutter
   const [detailMode, setDetailMode] = useState<"quick" | "detailed">("quick");
+  const [quickQuestionInput, setQuickQuestionInput] = useState("");
   const [correctionInput, setCorrectionInput] = useState("");
   const [copied, setCopied] = useState(false);
   const [selectedTraceIdx, setSelectedTraceIdx] = useState<number | null>(0);
@@ -72,7 +78,7 @@ export function ActionCard({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `112 Emergency Brief: ${report.incident_title}`,
+          title: `112 Brief: ${report.incident_title}`,
           text: editableBrief,
         });
       } catch {
@@ -104,49 +110,95 @@ export function ActionCard({
     editableBrief
   )}`;
 
-  // Ensure max 3 immediate actions
   const topActions = (report.immediate_actions || []).slice(0, 3);
+  const primaryMissingQuestion =
+    report.important_question ||
+    report.verification_matrix?.missing_critical_info?.[0] ||
+    null;
+
+  const isDifferentLanguage =
+    report.response_language && report.response_language !== language;
 
   return (
     <section
-      aria-label="Emergency Guidance and Evidence"
-      className={`rounded-3xl p-5 md:p-7 backdrop-blur-md transition-colors space-y-6 ${
-        isLight
-          ? "bg-white/75 text-slate-900 shadow-lg shadow-slate-900/5"
-          : "bg-[#080d1a]/70 text-slate-100"
-      }`}
+      aria-label="Solution-First Guidance and Evidence"
+      className="space-y-5 py-2"
     >
-      {/* ==================== EMERGENCY-FIRST HEADER ==================== */}
-      <div className="space-y-3">
-        {/* A. Advisory Urgency Pill + View Mode Switcher */}
+      {/* If user switched UI language after generating report, offer 1-click translation */}
+      {isDifferentLanguage && (
+        <div
+          className={`px-4 py-2.5 rounded-2xl backdrop-blur-md flex flex-wrap items-center justify-between gap-2 text-xs ${
+            isLight
+              ? "bg-cyan-50/90 text-cyan-950"
+              : "bg-cyan-950/60 text-cyan-100"
+          }`}
+        >
+          <span className="flex items-center gap-1.5 font-medium">
+            <Globe className="w-4 h-4 text-cyan-500" />
+            <span>{t.translateResultPrompt}</span>
+          </span>
+          <button
+            type="button"
+            disabled={isResolving}
+            onClick={onTranslateActiveReport}
+            className="px-3.5 py-1 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs cursor-pointer transition disabled:opacity-50"
+          >
+            {isResolving ? t.updatingAnalysisBtn : t.translateResultBtn}
+          </button>
+        </div>
+      )}
+
+      {/* Grounded Input Snapshot Pill — Proves this result matches the exact submitted text */}
+      <div
+        className={`px-3.5 py-2 rounded-2xl backdrop-blur-md text-xs flex flex-wrap items-center justify-between gap-2 ${
+          isLight
+            ? "bg-white/75 text-slate-700 shadow-2xs"
+            : "bg-slate-950/65 text-slate-300"
+        }`}
+      >
+        <div className="truncate max-w-full">
+          <span className="font-bold text-cyan-600 dark:text-cyan-400">
+            {t.resultForInputLabel}{" "}
+          </span>
+          <span className="italic">
+            &ldquo;{report.submittedTextSnapshot}&rdquo;
+          </span>
+        </div>
+        <span className="text-[10px] font-mono opacity-60 shrink-0">
+          ID: {report.requestId.slice(-6)}
+        </span>
+      </div>
+
+      {/* ==================== 1. HEADLINE & URGENCY ==================== */}
+      <div className="space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <span
-              className={`text-xs font-extrabold uppercase tracking-wider px-3.5 py-1 rounded-full ${urgencyBadgeStyles(
+              className={`text-xs font-extrabold uppercase tracking-wider px-3.5 py-1 rounded-full shadow-xs ${urgencyBadgeStyles(
                 report.severity_level
               )}`}
             >
               {t.urgencyLabels[report.severity_level] || report.severity_level}
             </span>
             <span
-              className={`text-[11px] ${
-                isLight ? "text-slate-600" : "text-slate-400"
+              className={`text-[11px] font-medium ${
+                isLight ? "text-slate-600" : "text-slate-300"
               }`}
             >
               {t.urgencyAdvisoryNote}
             </span>
           </div>
 
-          {/* Quick View vs Detailed View Toggle (Zero Extra API Calls) */}
+          {/* Quick View vs Detailed Evidence Toggle */}
           <div
-            className={`inline-flex rounded-full p-1 text-xs ${
-              isLight ? "bg-slate-200/80" : "bg-white/10"
+            className={`inline-flex rounded-full p-1 text-xs backdrop-blur-md ${
+              isLight ? "bg-white/80 shadow-2xs" : "bg-slate-950/70"
             }`}
           >
             <button
               type="button"
               onClick={() => setDetailMode("quick")}
-              className={`px-3 py-1 rounded-full font-medium transition cursor-pointer ${
+              className={`px-3 py-1 rounded-full font-semibold transition cursor-pointer ${
                 detailMode === "quick"
                   ? isLight
                     ? "bg-slate-900 text-white"
@@ -161,7 +213,7 @@ export function ActionCard({
             <button
               type="button"
               onClick={() => setDetailMode("detailed")}
-              className={`px-3 py-1 rounded-full font-medium transition cursor-pointer ${
+              className={`px-3 py-1 rounded-full font-semibold transition cursor-pointer ${
                 detailMode === "detailed"
                   ? isLight
                     ? "bg-slate-900 text-white"
@@ -176,25 +228,25 @@ export function ActionCard({
           </div>
         </div>
 
-        {/* B. Short Emergency Headline */}
+        {/* Short Situation Headline */}
         <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-snug">
           {report.incident_title}
         </h2>
 
-        {/* One-Sentence Urgency Rationale */}
+        {/* Concise 1-Sentence Rationale */}
         <p
-          className={`text-xs sm:text-sm leading-relaxed ${
-            isLight ? "text-slate-700" : "text-slate-300"
+          className={`text-xs sm:text-sm font-medium leading-relaxed ${
+            isLight ? "text-slate-700" : "text-slate-200"
           }`}
         >
           {report.urgency_rationale}
         </p>
       </div>
 
-      {/* ==================== C. UP TO 3 IMMEDIATE ACTIONS ==================== */}
-      <div className="space-y-3">
+      {/* ==================== 2. WHAT TO DO RIGHT NOW (UP TO 3 STEPS) ==================== */}
+      <div className="space-y-2.5">
         <h3
-          className={`text-xs font-bold uppercase tracking-wider ${
+          className={`text-xs font-extrabold uppercase tracking-wider ${
             isLight ? "text-cyan-700" : "text-cyan-400"
           }`}
         >
@@ -205,10 +257,10 @@ export function ActionCard({
           {topActions.map((act, index) => (
             <div
               key={act.step_number || index}
-              className={`p-4 rounded-2xl flex items-start gap-3.5 transition ${
+              className={`p-4 rounded-2xl backdrop-blur-md flex items-start gap-3.5 transition ${
                 isLight
-                  ? "bg-slate-100/90 text-slate-900"
-                  : "bg-white/5 text-white"
+                  ? "bg-white/85 text-slate-950 shadow-sm"
+                  : "bg-slate-950/75 text-white"
               }`}
             >
               <span
@@ -227,7 +279,7 @@ export function ActionCard({
                 {act.rationale && (
                   <div
                     className={`text-xs ${
-                      isLight ? "text-slate-600" : "text-slate-400"
+                      isLight ? "text-slate-600" : "text-slate-300"
                     }`}
                   >
                     {act.rationale}
@@ -239,7 +291,49 @@ export function ActionCard({
         </div>
       </div>
 
-      {/* ==================== D. PRIMARY EMERGENCY CONTROLS ==================== */}
+      {/* ==================== 3. MOST IMPORTANT FOLLOW-UP QUESTION ==================== */}
+      {primaryMissingQuestion && report.is_valid_emergency && (
+        <div
+          className={`p-4 rounded-2xl backdrop-blur-md space-y-2.5 ${
+            isLight
+              ? "bg-amber-50/90 text-slate-900 shadow-2xs"
+              : "bg-amber-950/45 text-slate-100"
+          }`}
+        >
+          <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-300">
+            <HelpCircle className="w-4 h-4 shrink-0" />
+            <span>
+              {t.importantQuestionHeading}: {primaryMissingQuestion}
+            </span>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              value={quickQuestionInput}
+              onChange={(e) => setQuickQuestionInput(e.target.value)}
+              placeholder={t.answerQuestionPlaceholder}
+              className={`flex-1 rounded-full px-3.5 py-2 text-xs focus:outline-none ${
+                isLight
+                  ? "bg-white text-slate-950 placeholder-slate-500"
+                  : "bg-slate-950/85 text-white placeholder-slate-400"
+              }`}
+            />
+            <button
+              type="button"
+              disabled={!quickQuestionInput.trim() || isResolving}
+              onClick={() => {
+                onResolveMissingInfo(quickQuestionInput.trim());
+                setQuickQuestionInput("");
+              }}
+              className="px-4 py-2 rounded-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-bold text-xs transition cursor-pointer shrink-0"
+            >
+              {isResolving ? t.updatingAnalysisBtn : t.answerQuestionBtn}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== 4. PRIMARY EMERGENCY CONTROLS ==================== */}
       <div className="flex flex-wrap items-center gap-2.5 pt-1">
         <a
           href="tel:112"
@@ -252,7 +346,7 @@ export function ActionCard({
         <button
           type="button"
           onClick={handleCopyBrief}
-          className={`flex items-center space-x-1.5 text-xs font-bold px-4 py-3 rounded-full transition cursor-pointer ${
+          className={`flex items-center space-x-1.5 text-xs font-bold px-4 py-3 rounded-full backdrop-blur-md transition cursor-pointer ${
             isLight
               ? "bg-slate-900 text-white hover:bg-slate-800"
               : "bg-cyan-500 text-slate-950 hover:bg-cyan-400"
@@ -268,10 +362,10 @@ export function ActionCard({
 
         <a
           href={smsLink}
-          className={`flex items-center space-x-1.5 text-xs font-semibold px-3.5 py-3 rounded-full transition ${
+          className={`flex items-center space-x-1.5 text-xs font-semibold px-3.5 py-3 rounded-full backdrop-blur-md transition ${
             isLight
-              ? "bg-slate-200/90 text-slate-800 hover:bg-slate-300"
-              : "bg-white/10 text-slate-200 hover:bg-white/15"
+              ? "bg-white/85 text-slate-900 hover:bg-white shadow-2xs"
+              : "bg-slate-950/75 text-slate-200 hover:bg-slate-900"
           }`}
         >
           <MessageSquare className="w-3.5 h-3.5" />
@@ -282,10 +376,10 @@ export function ActionCard({
           href={whatsappLink}
           target="_blank"
           rel="noopener noreferrer"
-          className={`flex items-center space-x-1.5 text-xs font-semibold px-3.5 py-3 rounded-full transition ${
+          className={`flex items-center space-x-1.5 text-xs font-semibold px-3.5 py-3 rounded-full backdrop-blur-md transition ${
             isLight
-              ? "bg-emerald-100 text-emerald-900 hover:bg-emerald-200"
-              : "bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
+              ? "bg-emerald-100/90 text-emerald-950 hover:bg-emerald-200"
+              : "bg-emerald-950/65 text-emerald-300 hover:bg-emerald-900/75"
           }`}
         >
           <Share2 className="w-3.5 h-3.5" />
@@ -293,10 +387,10 @@ export function ActionCard({
         </a>
       </div>
 
-      {/* ==================== E. SHORT UNCERTAINTY STATEMENT ==================== */}
+      {/* ==================== 5. UNCERTAINTY STATEMENT & EXPAND TOGGLE ==================== */}
       <div
-        className={`flex items-center justify-between gap-2 text-xs pt-2 ${
-          isLight ? "text-slate-600" : "text-slate-400"
+        className={`flex flex-wrap items-center justify-between gap-2 text-xs pt-1 ${
+          isLight ? "text-slate-700" : "text-slate-300"
         }`}
       >
         <span className="flex items-center gap-1.5">
@@ -309,7 +403,7 @@ export function ActionCard({
           onClick={() =>
             setDetailMode(detailMode === "quick" ? "detailed" : "quick")
           }
-          className={`inline-flex items-center gap-1 font-semibold underline cursor-pointer shrink-0 ${
+          className={`inline-flex items-center gap-1 font-bold underline cursor-pointer shrink-0 ${
             isLight ? "text-cyan-700" : "text-cyan-400"
           }`}
         >
@@ -324,52 +418,50 @@ export function ActionCard({
         </button>
       </div>
 
-      {/* ==================== F. EXPANDABLE DETAILED VIEW ==================== */}
+      {/* ==================== 6. EXPANDABLE DETAILED EVIDENCE VIEW ==================== */}
       {detailMode === "detailed" && (
-        <div
-          className={`pt-5 space-y-6 border-t ${
-            isLight ? "border-slate-900/10" : "border-white/10"
-          }`}
-        >
-          {/* 1. Incident Summary, Location & People Affected */}
-          <div className="space-y-2">
+        <div className="pt-4 space-y-5">
+          {/* Incident Summary, Location & People */}
+          <div
+            className={`p-4 rounded-2xl backdrop-blur-md space-y-2 ${
+              isLight ? "bg-white/80 shadow-2xs" : "bg-slate-950/70"
+            }`}
+          >
             <h4 className="text-xs font-bold uppercase tracking-wider opacity-75">
               {t.summaryAndLocationHeading}
             </h4>
             <p className="text-xs leading-relaxed">{report.executive_summary}</p>
-            <div className="flex flex-wrap gap-4 text-xs pt-1 opacity-85">
+            <div className="flex flex-wrap gap-4 text-xs pt-1 opacity-90">
               <div>
-                <strong>Location:</strong>{" "}
+                <strong>{t.locationFieldLabel}</strong>{" "}
                 {report.location_status.detected_location}
               </div>
               <div>
-                <strong>People:</strong>{" "}
+                <strong>{t.peopleFieldLabel}</strong>{" "}
                 {report.people_affected?.reported_summary} (
                 {report.people_affected?.uncertainty})
               </div>
             </div>
           </div>
 
-          {/* 2. Three-Column Evidence & Uncertainty Matrix */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider opacity-75">
+          {/* Three-Column Evidence Matrix (+ Image Observations if present) */}
+          <div className="space-y-2.5">
+            <h4 className="text-xs font-bold uppercase tracking-wider">
               {t.evidenceMatrixHeading}
             </h4>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {/* Reported Facts */}
+              {/* Column 1: Reported Facts & Image Observations */}
               <div
-                className={`p-4 rounded-2xl ${
-                  isLight ? "bg-slate-100/90" : "bg-white/5"
+                className={`p-4 rounded-2xl backdrop-blur-md space-y-2 ${
+                  isLight ? "bg-white/80 shadow-2xs" : "bg-slate-950/70"
                 }`}
               >
                 <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-600 dark:text-cyan-400">
                   <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                   <span>{t.reportedInfoCol}</span>
                 </div>
-                <p className="text-[10px] opacity-70 mt-0.5 mb-2">
-                  {t.reportedInfoSub}
-                </p>
+                <p className="text-[10px] opacity-70">{t.reportedInfoSub}</p>
                 <ul className="space-y-1.5 text-xs">
                   {report.verification_matrix.user_reported_facts.map(
                     (fact, i) => (
@@ -380,21 +472,39 @@ export function ActionCard({
                     )
                   )}
                 </ul>
+
+                {report.verification_matrix.image_observations &&
+                  report.verification_matrix.image_observations.length > 0 && (
+                    <div className="pt-2 space-y-1">
+                      <div className="flex items-center gap-1 text-[11px] font-bold text-cyan-600 dark:text-cyan-300">
+                        <Camera className="w-3 h-3" />
+                        <span>{t.imageObservationsCol}</span>
+                      </div>
+                      <ul className="space-y-1 text-xs">
+                        {report.verification_matrix.image_observations.map(
+                          (obs, i) => (
+                            <li key={i} className="flex items-start gap-1.5">
+                              <span className="text-cyan-500 font-bold">•</span>
+                              <span>{obs}</span>
+                            </li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+                  )}
               </div>
 
-              {/* AI-Identified Risks */}
+              {/* Column 2: AI-Identified Risks */}
               <div
-                className={`p-4 rounded-2xl ${
-                  isLight ? "bg-slate-100/90" : "bg-white/5"
+                className={`p-4 rounded-2xl backdrop-blur-md space-y-2 ${
+                  isLight ? "bg-white/80 shadow-2xs" : "bg-slate-950/70"
                 }`}
               >
                 <div className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400">
                   <Sparkles className="w-3.5 h-3.5 shrink-0" />
                   <span>{t.aiRisksCol}</span>
                 </div>
-                <p className="text-[10px] opacity-70 mt-0.5 mb-2">
-                  {t.aiRisksSub}
-                </p>
+                <p className="text-[10px] opacity-70">{t.aiRisksSub}</p>
                 <ul className="space-y-1.5 text-xs">
                   {report.verification_matrix.ai_visual_or_context_inferences.map(
                     (inf, i) => (
@@ -407,19 +517,17 @@ export function ActionCard({
                 </ul>
               </div>
 
-              {/* Missing Information */}
+              {/* Column 3: Missing Information */}
               <div
-                className={`p-4 rounded-2xl ${
-                  isLight ? "bg-slate-100/90" : "bg-white/5"
+                className={`p-4 rounded-2xl backdrop-blur-md space-y-2 ${
+                  isLight ? "bg-white/80 shadow-2xs" : "bg-slate-950/70"
                 }`}
               >
                 <div className="flex items-center gap-1.5 text-xs font-bold text-rose-600 dark:text-rose-400">
                   <HelpCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>{t.missingInfoCol}</span>
                 </div>
-                <p className="text-[10px] opacity-70 mt-0.5 mb-2">
-                  {t.missingInfoSub}
-                </p>
+                <p className="text-[10px] opacity-70">{t.missingInfoSub}</p>
                 <ul className="space-y-1.5 text-xs">
                   {report.verification_matrix.missing_critical_info.map(
                     (missing, i) => (
@@ -434,7 +542,7 @@ export function ActionCard({
             </div>
           </div>
 
-          {/* 3. Evidence Trace */}
+          {/* Evidence Trace */}
           {report.evidence_trace && report.evidence_trace.length > 0 && (
             <div className="space-y-2.5">
               <div className="text-xs font-bold flex items-center gap-1.5">
@@ -450,12 +558,12 @@ export function ActionCard({
                       key={idx}
                       type="button"
                       onClick={() => setSelectedTraceIdx(idx)}
-                      className={`text-left text-xs px-3 py-1.5 rounded-full transition cursor-pointer ${
+                      className={`text-left text-xs px-3 py-1.5 rounded-full backdrop-blur-md transition cursor-pointer ${
                         isSelected
                           ? "bg-cyan-600 text-white font-semibold"
                           : isLight
-                          ? "bg-slate-200/80 text-slate-800 hover:bg-slate-300"
-                          : "bg-white/10 text-slate-300 hover:bg-white/15"
+                          ? "bg-white/80 text-slate-800 hover:bg-white shadow-2xs"
+                          : "bg-slate-950/70 text-slate-300 hover:bg-slate-900"
                       }`}
                     >
                       {item.claim}
@@ -467,8 +575,8 @@ export function ActionCard({
               {selectedTraceIdx !== null &&
                 report.evidence_trace[selectedTraceIdx] && (
                   <div
-                    className={`p-3.5 rounded-2xl text-xs space-y-1 ${
-                      isLight ? "bg-slate-100" : "bg-white/5"
+                    className={`p-3.5 rounded-2xl backdrop-blur-md text-xs space-y-1 ${
+                      isLight ? "bg-white/85 shadow-2xs" : "bg-slate-950/75"
                     }`}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -485,8 +593,8 @@ export function ActionCard({
                         ].source_type.replace("_", " ")}
                       </span>
                     </div>
-                    <div className="opacity-85">
-                      <strong>Source Quote:</strong> &ldquo;
+                    <div className="opacity-90">
+                      <strong>{t.sourceQuoteLabel}</strong> &ldquo;
                       {
                         report.evidence_trace[selectedTraceIdx]
                           .supporting_quote_or_observation
@@ -496,7 +604,7 @@ export function ActionCard({
                     {report.evidence_trace[selectedTraceIdx]
                       .uncertainty_note && (
                       <div className="text-amber-600 dark:text-amber-300">
-                        <strong>Uncertainty:</strong>{" "}
+                        <strong>{t.uncertaintyNoteLabel}</strong>{" "}
                         {
                           report.evidence_trace[selectedTraceIdx]
                             .uncertainty_note
@@ -508,7 +616,7 @@ export function ActionCard({
             </div>
           )}
 
-          {/* 4. Interactive User Correction Loop */}
+          {/* User Correction Loop */}
           <div className="space-y-2">
             <label
               htmlFor="correction-input"
@@ -524,10 +632,10 @@ export function ActionCard({
                 value={correctionInput}
                 onChange={(e) => setCorrectionInput(e.target.value)}
                 placeholder={t.correctionPlaceholder}
-                className={`flex-1 rounded-2xl px-3.5 py-2.5 text-xs focus:outline-none ${
+                className={`flex-1 rounded-2xl px-3.5 py-2.5 text-xs backdrop-blur-md focus:outline-none ${
                   isLight
-                    ? "bg-white text-slate-900 placeholder-slate-400 shadow-inner"
-                    : "bg-slate-950/80 text-slate-100 placeholder-slate-500"
+                    ? "bg-white/85 text-slate-950 placeholder-slate-500 shadow-2xs"
+                    : "bg-slate-950/75 text-white placeholder-slate-400"
                 }`}
               />
               <button
@@ -544,7 +652,7 @@ export function ActionCard({
             </div>
           </div>
 
-          {/* 5. Safety Warnings */}
+          {/* Safety Warnings */}
           {report.critical_warnings.length > 0 && (
             <div className="space-y-1.5">
               <h4 className="text-xs font-bold uppercase text-red-600 dark:text-red-400 flex items-center gap-1.5">
@@ -552,10 +660,10 @@ export function ActionCard({
                 <span>{t.warningsHeading}</span>
               </h4>
               <div
-                className={`p-3.5 rounded-2xl space-y-1.5 text-xs ${
+                className={`p-3.5 rounded-2xl backdrop-blur-md space-y-1.5 text-xs ${
                   isLight
-                    ? "bg-red-50 text-red-900"
-                    : "bg-red-950/30 text-red-200"
+                    ? "bg-red-50/90 text-red-950"
+                    : "bg-red-950/45 text-red-200"
                 }`}
               >
                 {report.critical_warnings.map((warn, i) => (
@@ -568,10 +676,10 @@ export function ActionCard({
             </div>
           )}
 
-          {/* 6. Full Editable 112 Emergency Brief */}
+          {/* Full Editable 112 Emergency Brief */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold uppercase opacity-80">
+              <h4 className="text-xs font-bold uppercase opacity-85">
                 {t.editableBriefHeading}
               </h4>
               <div className="flex items-center gap-1.5">
@@ -599,14 +707,14 @@ export function ActionCard({
               value={editableBrief}
               onChange={(e) => setEditableBrief(e.target.value)}
               aria-label={t.editableBriefHeading}
-              className={`w-full rounded-2xl p-3 text-xs font-mono leading-relaxed focus:outline-none ${
+              className={`w-full rounded-2xl p-3 text-xs font-mono leading-relaxed backdrop-blur-md focus:outline-none ${
                 isLight
-                  ? "bg-white text-slate-900 shadow-inner"
-                  : "bg-slate-950/80 text-slate-200"
+                  ? "bg-white/85 text-slate-900 shadow-2xs"
+                  : "bg-slate-950/75 text-slate-200"
               }`}
             />
 
-            <p className="text-[11px] opacity-65">{t.nonDispatchDisclaimer}</p>
+            <p className="text-[11px] opacity-75">{t.nonDispatchDisclaimer}</p>
           </div>
         </div>
       )}
