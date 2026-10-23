@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { TopNav } from "@/components/ui/TopNav";
 import { InputConsole } from "@/components/ui/InputConsole";
 import { ActionCard } from "@/components/ui/ActionCard";
+import { IncidentRadar } from "@/components/ui/IncidentRadar";
 import { TriageReport, SeverityLevel } from "@/types/triage";
 import { PRESET_SCENARIOS } from "@/lib/presets";
 import { CORE_HOTSPOTS } from "@/components/scene/HolographicCore";
@@ -17,6 +18,7 @@ import {
   Layers,
   AlertCircle,
   Loader2,
+  Radar,
 } from "lucide-react";
 
 const SceneCanvas = dynamic(() => import("@/components/scene/SceneCanvas"), {
@@ -599,17 +601,29 @@ export default function ResQvantaApp() {
                     </div>
                   </div>
                 ) : triageReport ? (
-                  <ActionCard
-                    report={triageReport}
-                    onResolveMissingInfo={handleResolveMissing}
-                    onTranslateActiveReport={handleTranslateActiveReport}
-                    isResolving={isResolving}
-                    language={language}
-                    theme={theme}
-                    t={t}
-                  />
+                  <div className="space-y-4">
+                    <ActionCard
+                      report={triageReport}
+                      onResolveMissingInfo={handleResolveMissing}
+                      onTranslateActiveReport={handleTranslateActiveReport}
+                      isResolving={isResolving}
+                      language={language}
+                      theme={theme}
+                      t={t}
+                    />
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setViewMode("radar")}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-xs transition cursor-pointer"
+                      >
+                        <Radar className="w-4 h-4" />
+                        <span>Open Live Emergency Radar & Hospital Map →</span>
+                      </button>
+                    </div>
+                  </div>
                 ) : (
-                  <div className="py-12 px-6 text-center flex flex-col items-center justify-center min-h-[320px] space-y-3">
+                  <div className="py-12 px-6 text-center flex flex-col items-center justify-center min-h-[320px] space-y-4">
                     <div
                       className={`w-12 h-12 rounded-2xl backdrop-blur-md flex items-center justify-center ${
                         isLight
@@ -631,6 +645,18 @@ export default function ResQvantaApp() {
                         {t.readyDescription}
                       </p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("radar")}
+                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold backdrop-blur-md transition cursor-pointer ${
+                        isLight
+                          ? "bg-white/85 text-cyan-800 hover:bg-white shadow-2xs"
+                          : "bg-slate-900/80 text-cyan-300 hover:bg-slate-900"
+                      }`}
+                    >
+                      <Radar className="w-3.5 h-3.5" />
+                      <span>View Live Responder Radar Map →</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -638,19 +664,29 @@ export default function ResQvantaApp() {
           </div>
         )}
 
-        {/* ==================== VIEW 3: COMPACT FLOATING SESSION HISTORY ==================== */}
+        {/* ==================== VIEW 3: LIVE TELEMETRY RADAR MAP & SESSION HISTORY ==================== */}
         {viewMode === "radar" && (
-          <div className="pointer-events-auto space-y-5 py-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <h2 className="text-2xl font-extrabold">{t.historyHeading}</h2>
-              <button
-                type="button"
-                onClick={() => setViewMode("workspace")}
-                className="px-5 py-2.5 rounded-full bg-cyan-600 text-white text-xs font-bold hover:bg-cyan-500 transition cursor-pointer self-start"
-              >
-                {t.newAnalysisBtn}
-              </button>
-            </div>
+          <div className="pointer-events-auto space-y-8 py-4">
+            {/* Live Spatial Incident Radar & Google Maps Emergency Routing */}
+            <IncidentRadar
+              gpsCoords={gpsCoords}
+              onGpsCoordsChange={setGpsCoords}
+              activeReport={triageReport}
+              theme={theme}
+              language={language}
+            />
+
+            <div className="space-y-4 pt-2 border-t border-slate-500/15">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h2 className="text-xl font-extrabold">{t.historyHeading}</h2>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("workspace")}
+                  className="px-5 py-2.5 rounded-full bg-cyan-600 text-white text-xs font-bold hover:bg-cyan-500 transition cursor-pointer self-start"
+                >
+                  {t.newAnalysisBtn}
+                </button>
+              </div>
 
             {incidentFeed.length === 0 ? (
               <div className="py-12 opacity-75 text-xs font-medium">
@@ -702,6 +738,7 @@ export default function ResQvantaApp() {
                 ))}
               </div>
             )}
+            </div>
           </div>
         )}
       </main>

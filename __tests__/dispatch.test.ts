@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {
+  latLonToVector3,
+  GLOBAL_EMERGENCY_HUBS,
+  EMERGENCY_ARC_PAIRS,
+  CONTINENT_POLYGONS,
+} from '../lib/earthContinents';
 
 test('112 Emergency Dispatch Packet length fits within single SMS boundary', () => {
   const brief = 'EMERGENCY: Person drowning. Immediate water rescue and medical assistance needed. Location not yet specified.';
@@ -27,4 +33,13 @@ test('WhatsApp and SMS share link encoding formats correctly without breaking UR
 
   assert.ok(whatsappUrl.startsWith('https://wa.me/?text=EMERGENCY%3A'));
   assert.ok(smsUrl.startsWith('sms:?body=EMERGENCY%3A'));
+});
+
+test('3D Earth Globe latLonToVector3 maps geographic coordinates accurately to sphere surface', () => {
+  const radius = 1.52;
+  const delhiVec = latLonToVector3(28.6139, 77.209, radius);
+  assert.ok(Math.abs(delhiVec.length() - radius) < 0.001, 'Vector length matches Earth sphere radius');
+  assert.ok(GLOBAL_EMERGENCY_HUBS.length >= 10, 'Includes major Indian and international emergency hubs');
+  assert.ok(EMERGENCY_ARC_PAIRS.length >= 10, 'Includes 3D signal arc pairs');
+  assert.ok(CONTINENT_POLYGONS.length >= 8, 'Includes major world continent outlines');
 });
