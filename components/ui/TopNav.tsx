@@ -61,14 +61,8 @@ export function TopNav({
         onClick={() => onViewModeChange("hero")}
         className="flex items-center space-x-3 cursor-pointer text-left group"
       >
-        <div
-          className={`w-9 h-9 rounded-xl flex items-center justify-center transition group-hover:scale-105 ${
-            isLight
-              ? "bg-cyan-600 text-white shadow-sm"
-              : "bg-cyan-500/20 text-cyan-300"
-          }`}
-        >
-          <ShieldAlert className="w-5 h-5" />
+        <div className="btn-3d-cyan w-9 h-9 rounded-xl flex items-center justify-center transition group-hover:scale-105 shadow-md">
+          <ShieldAlert className="w-5 h-5 text-white" />
         </div>
         <div>
           <div className="flex items-center space-x-2">
@@ -103,38 +97,18 @@ export function TopNav({
         </div>
       </button>
 
-      {/* Center Minimal Floating Navigation */}
+      {/* Center 3D Floating Navigation */}
       <nav
         aria-label="Primary View Navigation"
-        className="hidden lg:flex items-center space-x-1"
+        className="hidden lg:flex items-center space-x-2"
       >
         <button
           type="button"
-          onClick={() => onViewModeChange("workspace")}
-          className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition cursor-pointer ${
-            viewMode === "workspace"
-              ? isLight
-                ? "bg-slate-900 text-white font-semibold"
-                : "bg-cyan-500/20 text-cyan-300 font-semibold"
-              : isLight
-              ? "text-slate-600 hover:text-slate-950"
-              : "text-slate-400 hover:text-white"
-          }`}
-        >
-          {t.navWorkspace}
-        </button>
-
-        <button
-          type="button"
           onClick={() => onViewModeChange("hero")}
-          className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition cursor-pointer ${
+          className={`px-4 py-1.5 rounded-full text-xs font-bold transition cursor-pointer ${
             viewMode === "hero"
-              ? isLight
-                ? "bg-slate-900 text-white font-semibold"
-                : "bg-cyan-500/20 text-cyan-300 font-semibold"
-              : isLight
-              ? "text-slate-600 hover:text-slate-950"
-              : "text-slate-400 hover:text-white"
+              ? "btn-3d-cyan text-white shadow-md"
+              : "btn-3d-slate"
           }`}
         >
           {t.navShowroom}
@@ -142,15 +116,23 @@ export function TopNav({
 
         <button
           type="button"
+          onClick={() => onViewModeChange("workspace")}
+          className={`px-4 py-1.5 rounded-full text-xs font-bold transition cursor-pointer ${
+            viewMode === "workspace"
+              ? "btn-3d-cyan text-white shadow-md"
+              : "btn-3d-slate"
+          }`}
+        >
+          {t.navWorkspace}
+        </button>
+
+        <button
+          type="button"
           onClick={() => onViewModeChange("radar")}
-          className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition cursor-pointer ${
+          className={`px-4 py-1.5 rounded-full text-xs font-bold transition cursor-pointer ${
             viewMode === "radar"
-              ? isLight
-                ? "bg-slate-900 text-white font-semibold"
-                : "bg-cyan-500/20 text-cyan-300 font-semibold"
-              : isLight
-              ? "text-slate-600 hover:text-slate-950"
-              : "text-slate-400 hover:text-white"
+              ? "btn-3d-cyan text-white shadow-md"
+              : "btn-3d-slate"
           }`}
         >
           Radar Map
@@ -161,15 +143,11 @@ export function TopNav({
           onClick={() =>
             onOpenHistory ? onOpenHistory() : onViewModeChange("radar")
           }
-          className={`px-3 py-1.5 rounded-full text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-            isLight
-              ? "text-slate-600 hover:text-slate-950 hover:bg-slate-100"
-              : "text-slate-400 hover:text-white hover:bg-white/5"
-          }`}
+          className="btn-3d-slate px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer flex items-center gap-1.5"
         >
           <span>{t.navHistory}</span>
           {historyCount > 0 && (
-            <span className="w-4 h-4 rounded-full bg-cyan-500 text-slate-950 text-[10px] font-bold flex items-center justify-center">
+            <span className="w-4 h-4 rounded-full bg-cyan-500 text-slate-950 text-[10px] font-extrabold flex items-center justify-center">
               {historyCount}
             </span>
           )}
@@ -283,7 +261,7 @@ export function TopNav({
         <a
           href="tel:112"
           aria-label="Call 112 National Emergency Services"
-          className="flex items-center space-x-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3 sm:px-3.5 py-1.5 rounded-full shadow-sm transition transform active:scale-95 shrink-0"
+          className="btn-3d-red flex items-center space-x-1.5 text-white text-xs font-bold px-3.5 sm:px-4 py-1.5 rounded-full shadow-lg shrink-0 cursor-pointer"
         >
           <PhoneCall className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">{t.call112}</span>

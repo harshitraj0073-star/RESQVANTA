@@ -87,10 +87,25 @@ export function InputConsole({
   const [gpsNotice, setGpsNotice] = useState<string | null>(null);
   const [voiceStatus, setVoiceStatus] = useState<VoiceStatus>("ready");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+
+  const DYNAMIC_PLACEHOLDERS = [
+    t.inputPlaceholder,
+    "E.g. 'Basement mein paani bhar gaya hai aur meter se sparks aa rahe hain...'",
+    "E.g. 'Highway collision near divider, 2 passengers trapped inside vehicle...'",
+    "E.g. 'Dense chemical haze and fire spreading from 2nd floor warehouse...'",
+  ];
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<MinimalSpeechRecognition | null>(null);
   const isLight = theme === "light";
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPlaceholderIndex((prev) => (prev + 1) % DYNAMIC_PLACEHOLDERS.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [DYNAMIC_PLACEHOLDERS.length]);
 
   useEffect(() => {
     return () => {
@@ -284,9 +299,9 @@ export function InputConsole({
   return (
     <section
       aria-label={t.inputHeading}
-      className="space-y-5 py-2"
+      className="card-3d-tactile rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden"
     >
-      {/* Floating Open-Canvas Header (No heavy card wrapper) */}
+      {/* Top Header & Clear Draft */}
       <div className="flex items-start justify-between gap-2">
         <div>
           <h2 className="text-xl font-extrabold tracking-tight">{t.inputHeading}</h2>
@@ -302,19 +317,15 @@ export function InputConsole({
           <button
             type="button"
             onClick={handleClearAll}
-            className={`flex items-center gap-1 text-xs px-3 py-1 rounded-full backdrop-blur-md transition cursor-pointer ${
-              isLight
-                ? "bg-white/75 text-slate-700 hover:bg-red-100 hover:text-red-700"
-                : "bg-slate-900/75 text-slate-300 hover:bg-red-500/20 hover:text-red-300"
-            }`}
+            className="btn-3d-slate flex items-center gap-1.5 text-xs px-3.5 py-1.5 rounded-full cursor-pointer"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash2 className="w-3.5 h-3.5 text-red-400" />
             <span>{t.clearBtn}</span>
           </button>
         )}
       </div>
 
-      {/* Main Input Form First (So User Can Immediately Type or Speak) */}
+      {/* Main Input Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
@@ -336,15 +347,15 @@ export function InputConsole({
               rows={4}
               value={inputText}
               onChange={(e) => onInputTextChange(e.target.value)}
-              placeholder={t.inputPlaceholder}
-              className={`w-full rounded-2xl p-4 pb-12 text-xs sm:text-sm leading-relaxed backdrop-blur-md transition resize-none focus:outline-none ${
+              placeholder={inputText ? "" : DYNAMIC_PLACEHOLDERS[placeholderIndex]}
+              className={`w-full rounded-2xl p-4 pb-14 text-xs sm:text-sm leading-relaxed backdrop-blur-md transition resize-none focus:outline-none border ${
                 isLight
-                  ? "bg-white/80 text-slate-950 placeholder-slate-500 shadow-sm"
-                  : "bg-slate-950/70 text-white placeholder-slate-400"
+                  ? "bg-white/90 text-slate-950 placeholder-slate-400 border-slate-200/90 focus:border-cyan-500 shadow-inner"
+                  : "bg-[#0b1220]/90 text-white placeholder-slate-500 border-white/10 focus:border-cyan-400 shadow-inner"
               }`}
             />
 
-            {/* Voice Control Bar inside Textarea */}
+            {/* Voice Control Bar inside Textarea with 3D Ripple Feedback */}
             <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between gap-2">
               <div className="text-[11px] truncate">
                 {voiceStatus === "listening" && (
@@ -365,14 +376,15 @@ export function InputConsole({
                 aria-label={
                   voiceStatus === "listening" ? t.voiceStop : t.voiceReady
                 }
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer shrink-0 ${
+                className={`relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer shrink-0 ${
                   voiceStatus === "listening" || voiceStatus === "requesting"
-                    ? "bg-red-600 text-white animate-pulse"
-                    : isLight
-                    ? "bg-slate-900/10 text-slate-900 hover:bg-slate-900/20"
-                    : "bg-white/15 text-white hover:bg-white/25"
+                    ? "btn-3d-red text-white"
+                    : "btn-3d-slate"
                 }`}
               >
+                {voiceStatus === "listening" && (
+                  <span className="absolute -inset-1 rounded-full border-2 border-red-500/60 animate-ping pointer-events-none" />
+                )}
                 {voiceStatus === "listening" ? (
                   <>
                     <MicOff className="w-3.5 h-3.5" />
@@ -380,7 +392,7 @@ export function InputConsole({
                   </>
                 ) : (
                   <>
-                    <Mic className="w-3.5 h-3.5" />
+                    <Mic className="w-3.5 h-3.5 text-cyan-400" />
                     <span>
                       {voiceStatus === "requesting"
                         ? t.voiceRequesting
@@ -439,15 +451,11 @@ export function InputConsole({
             <button
               type="button"
               onClick={shareBrowserLocation}
-              className={`px-3.5 py-2.5 rounded-2xl text-xs font-semibold flex items-center justify-center gap-1.5 shrink-0 backdrop-blur-md transition cursor-pointer ${
-                gpsCoords
-                  ? "bg-cyan-600 text-white"
-                  : isLight
-                  ? "bg-white/80 text-slate-900 hover:bg-white shadow-sm"
-                  : "bg-slate-950/70 text-slate-200 hover:bg-slate-900"
+              className={`btn-3d-slate px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 shrink-0 transition cursor-pointer ${
+                gpsCoords ? "border-cyan-400 text-cyan-300" : ""
               }`}
             >
-              <MapPin className="w-3.5 h-3.5 text-cyan-500" />
+              <MapPin className="w-3.5 h-3.5 text-cyan-400" />
               <span>
                 {gpsCoords ? t.locationSharedBtn : t.shareLocationBtn}
               </span>
@@ -455,12 +463,12 @@ export function InputConsole({
           </div>
 
           {gpsCoords && (
-            <div className="text-[11px] font-mono text-cyan-700 dark:text-cyan-300 flex items-center justify-between px-2 py-0.5">
+            <div className="text-[11px] font-mono text-cyan-400 flex items-center justify-between px-2 py-0.5">
               <span>📍 GPS: {gpsCoords}</span>
               <button
                 type="button"
                 onClick={() => onGpsCoordsChange(null)}
-                className="underline text-[10px] cursor-pointer"
+                className="underline text-[10px] cursor-pointer hover:text-red-400"
               >
                 {t.clearBtn}
               </button>
@@ -468,7 +476,7 @@ export function InputConsole({
           )}
 
           {gpsNotice && (
-            <div className="text-[11px] text-amber-600 dark:text-amber-300 px-2">
+            <div className="text-[11px] text-amber-500 px-2 font-medium">
               {gpsNotice}
             </div>
           )}
@@ -488,8 +496,8 @@ export function InputConsole({
 
           {imageBase64 ? (
             <div
-              className={`rounded-2xl p-2.5 flex items-center space-x-3 backdrop-blur-md ${
-                isLight ? "bg-white/80 shadow-sm" : "bg-slate-950/70"
+              className={`rounded-2xl p-2.5 flex items-center space-x-3 border ${
+                isLight ? "bg-white border-slate-200 shadow-md" : "bg-slate-900 border-white/10 shadow-md"
               }`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -523,13 +531,9 @@ export function InputConsole({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className={`w-full rounded-2xl py-2.5 px-4 text-xs font-semibold flex items-center justify-center gap-2 backdrop-blur-md transition cursor-pointer ${
-                isLight
-                  ? "bg-white/75 hover:bg-white text-slate-800 shadow-sm"
-                  : "bg-slate-950/65 hover:bg-slate-900/80 text-slate-200"
-              }`}
+              className="btn-3d-slate w-full rounded-2xl py-3 px-4 text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer"
             >
-              <UploadCloud className="w-4 h-4 text-cyan-500" />
+              <UploadCloud className="w-4 h-4 text-cyan-400" />
               <span>{t.attachPhotoBtn}</span>
             </button>
           )}
@@ -538,18 +542,18 @@ export function InputConsole({
         {errorMessage && (
           <div
             role="alert"
-            className="p-3 rounded-2xl bg-red-600 text-white text-xs font-medium"
+            className="p-3.5 rounded-2xl bg-red-600 text-white text-xs font-bold shadow-lg"
           >
             {errorMessage}
           </div>
         )}
 
         {/* Submit / Cancel Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <button
             type="submit"
             disabled={isLoading}
-            className="flex-1 py-3.5 px-5 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs tracking-wide uppercase shadow-md transition transform active:scale-98 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center space-x-2 cursor-pointer"
+            className="btn-3d-cyan flex-1 py-3.5 px-6 rounded-2xl font-extrabold text-xs tracking-wider uppercase shadow-xl transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center space-x-2 cursor-pointer"
           >
             {isLoading ? (
               <>
@@ -568,7 +572,7 @@ export function InputConsole({
             <button
               type="button"
               onClick={onCancelAnalysis}
-              className="py-3.5 px-4 rounded-full bg-red-600/90 hover:bg-red-600 text-white text-xs font-bold transition cursor-pointer shrink-0"
+              className="btn-3d-red py-3.5 px-5 rounded-2xl text-xs font-bold transition cursor-pointer shrink-0"
             >
               {t.cancelAnalysisBtn}
             </button>
@@ -576,16 +580,16 @@ export function InputConsole({
         </div>
       </form>
 
-      {/* Sleek Compact Scenario Chips */}
+      {/* 3D Extruded Scenario Chips */}
       <div className="space-y-2 pt-1">
         <span
-          className={`text-[11px] font-bold uppercase tracking-wider block ${
+          className={`text-[11px] font-extrabold uppercase tracking-wider block ${
             isLight ? "text-slate-600" : "text-slate-400"
           }`}
         >
           {t.demoSectionTitle}
         </span>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2.5">
           {PRESET_SCENARIOS.map((p) => {
             const loc = p.localized[language] || p.localized["en-IN"];
             const icon =
@@ -602,14 +606,10 @@ export function InputConsole({
                 key={p.id}
                 type="button"
                 onClick={() => handleSelectPreset(p)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md transition cursor-pointer flex items-center gap-1.5 border ${
-                  isLight
-                    ? "bg-white/80 hover:bg-white text-slate-800 border-slate-200/80 shadow-2xs hover:border-cyan-500/50"
-                    : "bg-slate-900/80 hover:bg-slate-800 text-slate-200 border-white/10 hover:border-cyan-400/50"
-                }`}
+                className="chip-3d px-3.5 py-2 rounded-full text-xs font-bold transition cursor-pointer flex items-center gap-2 text-white"
               >
                 <span>{icon}</span>
-                <span className="font-medium">{shortTitle}</span>
+                <span className="font-semibold">{shortTitle}</span>
               </button>
             );
           })}
@@ -623,7 +623,7 @@ export function InputConsole({
         </span>
         <a
           href="tel:112"
-          className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 font-bold hover:underline shrink-0"
+          className="btn-3d-red px-4 py-1.5 rounded-full inline-flex items-center gap-1.5 font-bold text-xs text-white"
         >
           <PhoneCall className="w-3.5 h-3.5" />
           <span>{t.call112}</span>

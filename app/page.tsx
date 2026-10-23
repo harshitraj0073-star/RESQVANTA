@@ -6,8 +6,9 @@ import { TopNav } from "@/components/ui/TopNav";
 import { InputConsole } from "@/components/ui/InputConsole";
 import { ActionCard } from "@/components/ui/ActionCard";
 import { IncidentRadar } from "@/components/ui/IncidentRadar";
-import { MapBubble } from "@/components/overlays/MapBubble";
+import { CornerGlobeOrb } from "@/components/overlays/CornerGlobeOrb";
 import { HistoryDrawer } from "@/components/overlays/HistoryDrawer";
+import { CommandSpaceBackground } from "@/components/scene/CommandSpaceBackground";
 import { TriageReport, SeverityLevel } from "@/types/triage";
 import { PRESET_SCENARIOS } from "@/lib/presets";
 import { CORE_HOTSPOTS } from "@/components/scene/HolographicCore";
@@ -45,7 +46,7 @@ interface AnalysisPayload {
 
 export default function ResQvantaApp() {
   const [viewMode, setViewMode] = useState<"hero" | "workspace" | "radar">(
-    "workspace"
+    "hero"
   );
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [rotatingWordIndex, setRotatingWordIndex] = useState(0);
@@ -328,21 +329,8 @@ export default function ResQvantaApp() {
           : "bg-[#04070f] text-slate-100 selection:bg-cyan-400 selection:text-slate-950"
       }`}
     >
-      {/* 1. Theme-Aware Interactive 3D Background (Hero Showroom Only — Workspace remains tranquil) */}
-      {is3DMode && viewMode === "hero" && (
-        <div className="fixed inset-0 z-0 pointer-events-auto">
-          <SceneCanvas
-            status={coreStatus}
-            viewMode={viewMode}
-            theme={theme}
-            activeHotspot={activeHotspot}
-            onSelectHotspot={setActiveHotspot}
-            t={t}
-            gpsCoords={gpsCoords}
-            flyoverStage={flyoverStage}
-          />
-        </div>
-      )}
+      {/* 1. Cinematic 3D Command Space Horizon Background (Active Across All Pages) */}
+      <CommandSpaceBackground theme={theme} />
 
       {/* 2. Top Navigation Bar */}
       <TopNav
@@ -434,7 +422,7 @@ export default function ResQvantaApp() {
                       manualLocation: demoLocation,
                     });
                   }}
-                  className="px-6 py-3.5 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs tracking-wide uppercase shadow-md transition transform active:scale-95 cursor-pointer flex items-center gap-2"
+                  className="btn-3d-cyan px-7 py-3.5 rounded-2xl font-extrabold text-xs tracking-wider uppercase shadow-xl transition cursor-pointer flex items-center gap-2"
                 >
                   <span>⚡ {t.btnLiveDemo}</span>
                 </button>
@@ -442,11 +430,7 @@ export default function ResQvantaApp() {
                 <button
                   type="button"
                   onClick={() => setViewMode("workspace")}
-                  className={`px-6 py-3.5 rounded-full font-bold text-xs backdrop-blur-md transition flex items-center space-x-2 cursor-pointer ${
-                    isLight
-                      ? "bg-slate-900 text-white hover:bg-slate-800 shadow-sm"
-                      : "bg-white/15 text-white hover:bg-white/25"
-                  }`}
+                  className="btn-3d-slate px-7 py-3.5 rounded-2xl font-extrabold text-xs tracking-wider uppercase transition flex items-center space-x-2 cursor-pointer"
                 >
                   <span>{t.btnEnterWorkspace}</span>
                   <ArrowRight className="w-4 h-4" />
@@ -460,7 +444,7 @@ export default function ResQvantaApp() {
                 </span>
                 <a
                   href="tel:112"
-                  className="inline-flex items-center gap-1.5 text-red-600 dark:text-red-400 font-bold hover:underline"
+                  className="btn-3d-red px-4 py-1.5 rounded-full inline-flex items-center gap-1.5 text-xs font-bold text-white shadow-md"
                 >
                   <PhoneCall className="w-3.5 h-3.5" />
                   <span>{t.emergencyCallNow}</span>
@@ -610,14 +594,10 @@ export default function ResQvantaApp() {
                       role="tab"
                       aria-selected={isSelected}
                       onClick={() => setActiveHotspot(spot.id)}
-                      className={`w-full text-left p-4 rounded-2xl backdrop-blur-md transition cursor-pointer ${
+                      className={`w-full text-left p-4 rounded-2xl transition cursor-pointer ${
                         isSelected
-                          ? isLight
-                            ? "bg-cyan-600 text-white shadow-md"
-                            : "bg-cyan-500/25 text-white"
-                          : isLight
-                          ? "bg-white/75 text-slate-800 hover:bg-white/95 shadow-2xs"
-                          : "bg-slate-950/65 text-slate-200 hover:bg-slate-900/80"
+                          ? "btn-3d-cyan text-white shadow-xl"
+                          : "card-3d-tactile hover:border-cyan-400/50"
                       }`}
                     >
                       <div className="flex items-center gap-2 text-xs font-bold">
@@ -660,21 +640,17 @@ export default function ResQvantaApp() {
           <div className="max-w-3xl w-full mx-auto space-y-5 pointer-events-auto my-auto py-2">
             {/* Prototype Transparency & 112 Advisory Banner */}
             <div
-              className={`rounded-2xl p-3 px-4 border flex items-center justify-between gap-3 text-xs ${
-                isLight
-                  ? "bg-amber-500/10 border-amber-500/25 text-amber-900"
-                  : "bg-amber-500/10 border-amber-500/25 text-amber-200"
-              }`}
+              className="card-3d-tactile rounded-2xl p-3.5 px-4 flex items-center justify-between gap-3 text-xs"
             >
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-                <span>
-                  <strong>Disaster Assistance Prototype</strong>: Generates operator-ready briefs. For immediate life-saving aid, always call <strong>112</strong> directly.
+                <span className={isLight ? "text-slate-800" : "text-slate-200"}>
+                  <strong className="text-amber-500">Disaster Assistance Prototype</strong>: Generates operator-ready briefs. For immediate life-saving aid, always call <strong>112</strong> directly.
                 </span>
               </div>
               <a
                 href="tel:112"
-                className="px-3 py-1 rounded-full bg-red-600 hover:bg-red-500 text-white font-bold text-[11px] shrink-0 transition"
+                className="btn-3d-red px-4 py-1.5 rounded-full font-extrabold text-[11px] shrink-0 transition"
               >
                 Call 112
               </a>
@@ -788,11 +764,7 @@ export default function ResQvantaApp() {
                   <button
                     type="button"
                     onClick={() => setIsHistoryOpen(true)}
-                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition cursor-pointer border ${
-                      isLight
-                        ? "bg-white text-slate-800 border-slate-200 hover:bg-slate-50"
-                        : "bg-[#121e30] text-slate-200 border-white/10 hover:bg-slate-800"
-                    }`}
+                    className="btn-3d-slate inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-bold transition cursor-pointer"
                   >
                     <span>📋 View Session History ({incidentFeed.length})</span>
                   </button>
@@ -800,7 +772,7 @@ export default function ResQvantaApp() {
                   <button
                     type="button"
                     onClick={() => setViewMode("radar")}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-xs transition cursor-pointer"
+                    className="btn-3d-cyan inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl text-xs font-bold shadow-xl transition cursor-pointer"
                   >
                     <Radar className="w-4 h-4" />
                     <span>Inspect Live Sector Radar & Hospital Map →</span>
@@ -1011,8 +983,8 @@ export default function ResQvantaApp() {
         t={t}
       />
 
-      {/* 7. Floating 3D Geospatial Radar Bubble (Accessible in Workspace & Hero) */}
-      <MapBubble
+      {/* 7. Floating Interactive 3D Corner Globe Orb (Accessible Across All Views) */}
+      <CornerGlobeOrb
         gpsCoords={gpsCoords}
         activeReport={triageReport}
         theme={theme}

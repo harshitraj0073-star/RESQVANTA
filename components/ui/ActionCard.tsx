@@ -93,7 +93,14 @@ export function ActionCard({
   const handleCopyBrief = () => {
     navigator.clipboard.writeText(editableBrief);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      try {
+        navigator.vibrate(40);
+      } catch {
+        // ignore
+      }
+    }
+    setTimeout(() => setCopied(false), 2200);
   };
 
   const handleDownloadBrief = () => {
@@ -154,8 +161,18 @@ export function ActionCard({
   return (
     <section
       aria-label="Solution-First Guidance and Evidence"
-      className="space-y-5 py-2"
+      className="card-3d-tactile rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden"
     >
+      {/* 3D Border Beam for Critical & High Hazards */}
+      {(report.severity_level === "CRITICAL" || report.severity_level === "HIGH") && (
+        <div
+          className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse"
+          style={{
+            boxShadow: "0 0 12px rgba(6, 182, 212, 0.8)",
+          }}
+        />
+      )}
+
       {/* If user switched UI language after generating report, offer 1-click translation */}
       {isDifferentLanguage && (
         <div
@@ -173,7 +190,7 @@ export function ActionCard({
             type="button"
             disabled={isResolving}
             onClick={onTranslateActiveReport}
-            className="px-3.5 py-1 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs cursor-pointer transition disabled:opacity-50"
+            className="btn-3d-cyan px-4 py-1.5 rounded-full text-white font-bold text-xs cursor-pointer transition disabled:opacity-50"
           >
             {isResolving ? t.updatingAnalysisBtn : t.translateResultBtn}
           </button>
@@ -182,10 +199,10 @@ export function ActionCard({
 
       {/* Grounded Input Snapshot Pill — Proves this result matches the exact submitted text */}
       <div
-        className={`px-3.5 py-2 rounded-2xl backdrop-blur-md text-xs flex flex-wrap items-center justify-between gap-2 ${
+        className={`px-4 py-2.5 rounded-2xl text-xs flex flex-wrap items-center justify-between gap-2 border ${
           isLight
-            ? "bg-white/75 text-slate-700 shadow-2xs"
-            : "bg-slate-950/65 text-slate-300"
+            ? "bg-slate-100/90 text-slate-800 border-slate-200"
+            : "bg-slate-900/90 text-slate-200 border-white/10"
         }`}
       >
         <div className="truncate max-w-full">
@@ -202,11 +219,11 @@ export function ActionCard({
       </div>
 
       {/* ==================== 1. HEADLINE & URGENCY ==================== */}
-      <div className="space-y-2.5">
+      <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <span
-              className={`text-xs font-extrabold uppercase tracking-wider px-3.5 py-1 rounded-full shadow-xs ${urgencyBadgeStyles(
+              className={`text-xs font-extrabold uppercase tracking-wider px-3.5 py-1.5 rounded-full shadow-sm border border-white/10 ${urgencyBadgeStyles(
                 report.severity_level
               )}`}
             >
@@ -223,8 +240,8 @@ export function ActionCard({
 
           {/* Quick View vs Detailed Evidence Toggle */}
           <div
-            className={`inline-flex rounded-full p-1 text-xs backdrop-blur-md ${
-              isLight ? "bg-white/80 shadow-2xs" : "bg-slate-950/70"
+            className={`inline-flex rounded-full p-1 text-xs border ${
+              isLight ? "bg-slate-100 border-slate-200" : "bg-slate-950 border-white/10"
             }`}
           >
             <button
@@ -273,6 +290,27 @@ export function ActionCard({
         >
           {report.urgency_rationale}
         </p>
+
+        {/* Animated Dispatch Bridge (Magic UI Pattern) */}
+        <div
+          className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs ${
+            isLight
+              ? "bg-cyan-50/80 border-cyan-200"
+              : "bg-cyan-950/40 border-cyan-500/20"
+          }`}
+        >
+          <div className="flex items-center gap-2 font-mono text-[11px] text-cyan-600 dark:text-cyan-300 font-bold">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+            <span>112 DISPATCH BRIDGE ACTIVE</span>
+          </div>
+          <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400">
+            <span className="px-2 py-0.5 rounded bg-white/10 text-white font-semibold">1. Input Captured</span>
+            <span className="text-cyan-400">──▶</span>
+            <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-semibold">2. Gemini 3.5 Triage</span>
+            <span className="text-cyan-400">──▶</span>
+            <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">3. 112 SMS Ready</span>
+          </div>
+        </div>
       </div>
 
       {/* ==================== 2. WHAT TO DO RIGHT NOW (UP TO 3 STEPS) ==================== */}
@@ -393,11 +431,11 @@ export function ActionCard({
         </div>
       )}
 
-      {/* ==================== 4. PRIMARY EMERGENCY CONTROLS ==================== */}
-      <div className="flex flex-wrap items-center gap-2.5 pt-1">
+      {/* ==================== 4. 3D TACTILE EMERGENCY CONTROLS ==================== */}
+      <div className="flex flex-wrap items-center gap-3 pt-2">
         <a
           href="tel:112"
-          className="flex items-center space-x-2 bg-red-600 hover:bg-red-500 text-white text-xs sm:text-sm font-bold px-5 py-3 rounded-full shadow-md transition transform active:scale-95"
+          className="btn-3d-red flex items-center space-x-2.5 text-xs sm:text-sm font-extrabold px-6 py-3.5 rounded-2xl shadow-xl cursor-pointer"
         >
           <PhoneCall className="w-4 h-4" />
           <span>{t.call112}</span>
@@ -406,29 +444,21 @@ export function ActionCard({
         <button
           type="button"
           onClick={handleCopyBrief}
-          className={`flex items-center space-x-1.5 text-xs font-bold px-4 py-3 rounded-full backdrop-blur-md transition cursor-pointer ${
-            isLight
-              ? "bg-slate-900 text-white hover:bg-slate-800"
-              : "bg-cyan-500 text-slate-950 hover:bg-cyan-400"
-          }`}
+          className="btn-3d-cyan flex items-center space-x-2 text-xs font-extrabold px-5 py-3.5 rounded-2xl shadow-xl cursor-pointer"
         >
           {copied ? (
-            <Check className="w-4 h-4" />
+            <Check className="w-4 h-4 text-white" />
           ) : (
             <Copy className="w-4 h-4" />
           )}
-          <span>{copied ? t.copiedBriefBtn : t.copyBriefBtn}</span>
+          <span>{copied ? "✓ Copied for 112 SMS" : t.copyBriefBtn}</span>
         </button>
 
         <a
           href={smsLink}
-          className={`flex items-center space-x-1.5 text-xs font-semibold px-3.5 py-3 rounded-full backdrop-blur-md transition ${
-            isLight
-              ? "bg-white/85 text-slate-900 hover:bg-white shadow-2xs"
-              : "bg-slate-950/75 text-slate-200 hover:bg-slate-900"
-          }`}
+          className="btn-3d-slate flex items-center space-x-2 text-xs font-bold px-4 py-3.5 rounded-2xl cursor-pointer"
         >
-          <MessageSquare className="w-3.5 h-3.5" />
+          <MessageSquare className="w-3.5 h-3.5 text-cyan-400" />
           <span>{t.shareSmsBtn}</span>
         </a>
 
@@ -436,13 +466,9 @@ export function ActionCard({
           href={whatsappLink}
           target="_blank"
           rel="noopener noreferrer"
-          className={`flex items-center space-x-1.5 text-xs font-semibold px-3.5 py-3 rounded-full backdrop-blur-md transition ${
-            isLight
-              ? "bg-emerald-100/90 text-emerald-950 hover:bg-emerald-200"
-              : "bg-emerald-950/65 text-emerald-300 hover:bg-emerald-900/75"
-          }`}
+          className="btn-3d-slate flex items-center space-x-2 text-xs font-bold px-4 py-3.5 rounded-2xl hover:text-emerald-400 cursor-pointer"
         >
-          <Share2 className="w-3.5 h-3.5" />
+          <Share2 className="w-3.5 h-3.5 text-emerald-400" />
           <span>{t.shareWhatsappBtn}</span>
         </a>
       </div>

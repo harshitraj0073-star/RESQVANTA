@@ -51,6 +51,119 @@ body {
   outline-offset: 2px;
 }
 
+/* ==================== 3D TACTILE COMPONENT SYSTEM ==================== */
+
+/* 3D Tactile Buttons with Physical Push-Down Physics */
+.btn-3d-cyan {
+  background: linear-gradient(180deg, #06b6d4 0%, #0891b2 100%);
+  color: #ffffff;
+  border-top: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 0 #0e7490, 0 8px 18px rgba(6, 182, 212, 0.35);
+  transition: all 0.1s ease-out;
+}
+.btn-3d-cyan:hover {
+  background: linear-gradient(180deg, #22d3ee 0%, #06b6d4 100%);
+  box-shadow: 0 4px 0 #0e7490, 0 10px 22px rgba(6, 182, 212, 0.45);
+}
+.btn-3d-cyan:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #0e7490, 0 3px 6px rgba(0, 0, 0, 0.4);
+}
+
+.btn-3d-red {
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+  color: #ffffff;
+  border-top: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 0 #991b1b, 0 8px 18px rgba(239, 68, 68, 0.45);
+  transition: all 0.1s ease-out;
+}
+.btn-3d-red:hover {
+  background: linear-gradient(180deg, #f87171 0%, #ef4444 100%);
+  box-shadow: 0 4px 0 #991b1b, 0 10px 22px rgba(239, 68, 68, 0.55);
+}
+.btn-3d-red:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #991b1b, 0 3px 6px rgba(0, 0, 0, 0.4);
+}
+
+.btn-3d-slate {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  color: #f8fafc;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 3px 0 #020617, 0 6px 14px rgba(0, 0, 0, 0.5);
+  transition: all 0.1s ease-out;
+}
+.btn-3d-slate:hover {
+  background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+  box-shadow: 0 3px 0 #020617, 0 8px 18px rgba(0, 0, 0, 0.6);
+}
+.btn-3d-slate:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #020617, 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* 3D Extruded Chip Pills */
+.chip-3d {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.35);
+  transition: all 0.12s ease-out;
+}
+.chip-3d:hover {
+  transform: translateY(-1px);
+  border-color: rgba(6, 182, 212, 0.65);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.6), 0 6px 14px rgba(6, 182, 212, 0.25);
+}
+.chip-3d:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* 3D Tactile Card Container with Specular Sheen */
+.card-3d-tactile {
+  background: linear-gradient(180deg, rgba(18, 30, 48, 0.92) 0%, rgba(11, 18, 32, 0.96) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Light mode overrides for 3D components */
+html[data-theme="light"] .chip-3d {
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+  border-top: 1px solid #ffffff;
+  border-left: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+  box-shadow: 0 3px 0 #cbd5e1, 0 4px 8px rgba(0, 0, 0, 0.06);
+}
+html[data-theme="light"] .chip-3d:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #cbd5e1, 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+html[data-theme="light"] .btn-3d-slate {
+  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+  color: #0f172a;
+  border-top: 1px solid #ffffff;
+  box-shadow: 0 3px 0 #94a3b8, 0 6px 12px rgba(0, 0, 0, 0.08);
+}
+html[data-theme="light"] .btn-3d-slate:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #94a3b8, 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+html[data-theme="light"] .card-3d-tactile {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.98) 100%);
+  border-top: 1px solid #ffffff;
+  border-left: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 2px solid #cbd5e1;
+  box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.08), 0 4px 10px rgba(0, 0, 0, 0.04);
+}
+
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   *,
