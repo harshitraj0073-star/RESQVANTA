@@ -4,6 +4,11 @@ import React, { useState, useMemo } from "react";
 import { TriageReport } from "@/types/triage";
 import { SupportedLanguage } from "@/lib/translations";
 import {
+  GROUNDED_CITIES,
+  resolveTargetCity,
+  CityResponder,
+} from "@/lib/geospatial";
+import {
   MapPin,
   Navigation,
   PhoneCall,
@@ -19,6 +24,7 @@ import {
   Compass,
   Globe,
   AlertTriangle,
+  Target,
 } from "lucide-react";
 
 interface IncidentRadarProps {
@@ -31,77 +37,11 @@ interface IncidentRadarProps {
   onFlyoverStageChange?: (stage: "space" | "country" | "city") => void;
 }
 
-interface EmergencyResponderNode {
-  id: string;
-  name: string;
-  category: "MEDICAL" | "POLICE" | "FIRE" | "NDRF";
-  phone: string;
-  distanceKm: number;
-  etaMin: number;
-  dLat: number;
-  dLon: number;
-  angleDeg: number;
-  radiusPct: number;
+interface EnrichedResponderNode extends CityResponder {
+  destLat: string;
+  destLon: string;
+  googleMapsUrl: string;
 }
-
-const RESPONDER_OFFSETS: EmergencyResponderNode[] = [
-  {
-    id: "police-112",
-    name: "112 ERSS Police & PCR Tactical Unit",
-    category: "POLICE",
-    phone: "112",
-    distanceKm: 0.8,
-    etaMin: 2,
-    dLat: 0.0055,
-    dLon: 0.0042,
-    angleDeg: 38,
-    radiusPct: 28,
-  },
-  {
-    id: "trauma-108",
-    name: "Level-1 Trauma & Emergency Hospital (Ruby Hall / Sassoon)",
-    category: "MEDICAL",
-    phone: "108",
-    distanceKm: 1.4,
-    etaMin: 4,
-    dLat: -0.0085,
-    dLon: 0.0095,
-    angleDeg: 132,
-    radiusPct: 48,
-  },
-  {
-    id: "fire-101",
-    name: "Municipal Central Fire & HazMat Rescue Station",
-    category: "FIRE",
-    phone: "101",
-    distanceKm: 2.1,
-    etaMin: 5,
-    dLat: 0.012,
-    dLon: -0.011,
-    angleDeg: 315,
-    radiusPct: 65,
-  },
-  {
-    id: "ndrf-1070",
-    name: "NDRF 5th Battalion Rapid Disaster Response Unit",
-    category: "NDRF",
-    phone: "1070",
-    distanceKm: 3.4,
-    etaMin: 8,
-    dLat: -0.018,
-    dLon: -0.015,
-    angleDeg: 225,
-    radiusPct: 82,
-  },
-];
-
-const QUICK_SECTORS = [
-  { name: "Pune HQ", coords: "18.5204, 73.8567", cityName: "Pune, Maharashtra" },
-  { name: "Mumbai Control", coords: "19.0760, 72.8777", cityName: "Mumbai, Maharashtra" },
-  { name: "New Delhi 112", coords: "28.6139, 77.2090", cityName: "New Delhi, NCR" },
-  { name: "Bengaluru Grid", coords: "12.9716, 77.5946", cityName: "Bengaluru, Karnataka" },
-  { name: "Kolkata Node", coords: "22.5726, 88.3639", cityName: "Kolkata, West Bengal" },
-];
 
 export function IncidentRadar({
   gpsCoords,
@@ -111,34 +51,48 @@ export function IncidentRadar({
   onFlyoverStageChange,
 }: IncidentRadarProps) {
   const [isLocating, setIsLocating] = useState(false);
-  const [selectedNodeId, setSelectedNodeId] = useState<string>("trauma-108");
+  const [userSelectedNodeId, setUserSelectedNodeId] = useState<string | null>(null);
   const [viewModeTab, setViewModeTab] = useState<"globe" | "satellite" | "map">("globe");
   const isLight = theme === "light";
 
-  // Parse coordinates or fallback to Pune Central Command (18.5204, 73.8567)
-  const parsedCoords = useMemo(() => {
-    if (gpsCoords) {
-      const parts = gpsCoords.split(",").map((s) => parseFloat(s.trim()));
-      if (
-        parts.length === 2 &&
-        !Number.isNaN(parts[0]) &&
-        !Number.isNaN(parts[1])
-      ) {
-        return { lat: parts[0], lon: parts[1], isLive: true };
-      }
-    }
-    return { lat: 18.5204, lon: 73.8567, isLive: false };
+  // WGS84 authoritative city resolution
+  const targetResolution = useMemo(() => {
+    return resolveTargetCity(gpsCoords);
   }, [gpsCoords]);
 
-  // Active City Name lookup
-  const activeCityName = useMemo(() => {
-    const match = QUICK_SECTORS.find(
-      (s) => s.coords.replace(/\s+/g, "") === gpsCoords?.replace(/\s+/g, "")
-    );
-    if (match) return match.cityName;
-    if (parsedCoords.isLive) return "Live Verified GPS Location";
-    return "Pune, Maharashtra, India";
-  }, [gpsCoords, parsedCoords.isLive]);
+  const activeCity = targetResolution.city;
+  const parsedCoords = targetResolution.coords;
+  const isLive = !targetResolution.isMatchedPreset;
+
+  // Active City formatted display name
+  const activeCityDisplayName = useMemo(() => {
+    return `${activeCity.name}, ${activeCity.state}, ${activeCity.country}`;
+  }, [activeCity]);
+
+  // Compute live responder coordinates around the city's verified epicenter
+  const responderNodes: EnrichedResponderNode[] = useMemo(() => {
+    return activeCity.responders.map((node) => {
+      const destLat = (parsedCoords.lat + node.dLat).toFixed(5);
+      const destLon = (parsedCoords.lon + node.dLon).toFixed(5);
+      const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${parsedCoords.lat},${parsedCoords.lon}&destination=${destLat},${destLon}&travelmode=driving`;
+      return {
+        ...node,
+        destLat,
+        destLon,
+        googleMapsUrl,
+      };
+    });
+  }, [activeCity, parsedCoords]);
+
+  // Purely derived selected node without cascading effect renders
+  const selectedNode = useMemo(() => {
+    if (userSelectedNodeId) {
+      const match = responderNodes.find((n) => n.id === userSelectedNodeId);
+      if (match) return match;
+    }
+    const medical = responderNodes.find((n) => n.category === "MEDICAL");
+    return medical || responderNodes[0];
+  }, [userSelectedNodeId, responderNodes]);
 
   const handleLockGps = () => {
     if (typeof navigator === "undefined" || !navigator.geolocation) return;
@@ -159,25 +113,7 @@ export function IncidentRadar({
     );
   };
 
-  // Compute live responder coordinates around the user's epicenter
-  const responderNodes = useMemo(() => {
-    return RESPONDER_OFFSETS.map((node) => {
-      const destLat = (parsedCoords.lat + node.dLat).toFixed(5);
-      const destLon = (parsedCoords.lon + node.dLon).toFixed(5);
-      const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${parsedCoords.lat},${parsedCoords.lon}&destination=${destLat},${destLon}&travelmode=driving`;
-      return {
-        ...node,
-        destLat,
-        destLon,
-        googleMapsUrl,
-      };
-    });
-  }, [parsedCoords]);
-
-  const selectedNode =
-    responderNodes.find((n) => n.id === selectedNodeId) || responderNodes[0];
-
-  // OpenStreetMap bounding box around the epicenter
+  // OpenStreetMap bounding box around the active epicenter
   const osmEmbedUrl = useMemo(() => {
     const delta = 0.025;
     const minLon = (parsedCoords.lon - delta).toFixed(4);
@@ -207,14 +143,14 @@ export function IncidentRadar({
             <span>GLOBAL & LOCAL EMERGENCY TELEMETRY RADAR</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            Live Responder Proximity & Ripple Map
+            Live Responder Proximity & Tactical Ripple Map
           </h2>
           <p
             className={`text-xs ${
               isLight ? "text-slate-600" : "text-slate-300"
             }`}
           >
-            Real-time geospatial intelligence, 1st–3rd order hazard perimeter, and
+            Georeferenced planetary targeting, authentic satellite layers, and
             one-click Google Maps emergency routing.
           </p>
         </div>
@@ -230,16 +166,14 @@ export function IncidentRadar({
           >
             <span
               className={`w-2 h-2 rounded-full ${
-                parsedCoords.isLive
-                  ? "bg-emerald-500 animate-ping"
-                  : "bg-amber-500"
+                isLive ? "bg-emerald-500 animate-ping" : "bg-amber-500"
               }`}
             />
             <span>
               {parsedCoords.lat.toFixed(4)}° N, {parsedCoords.lon.toFixed(4)}° E
             </span>
             <span className="text-[10px] opacity-65">
-              ({parsedCoords.isLive ? "LIVE GPS" : "DEFAULT SECTOR"})
+              ({isLive ? "LIVE GPS" : "VERIFIED SECTOR"})
             </span>
           </div>
 
@@ -320,7 +254,7 @@ export function IncidentRadar({
             }`}
           >
             <Compass className="w-3 h-3 text-amber-400" />
-            <span>{activeCityName.split(",")[0]} Sector (~150 km)</span>
+            <span>{activeCity.name} Sector (~150 km)</span>
           </button>
         </div>
 
@@ -376,14 +310,16 @@ export function IncidentRadar({
         <span className="text-[11px] font-mono uppercase tracking-wider opacity-70">
           Target City:
         </span>
-        {QUICK_SECTORS.map((sec) => {
-          const isCurrent = gpsCoords?.trim() === sec.coords;
+        {GROUNDED_CITIES.map((city) => {
+          const isCurrent = activeCity.id === city.id;
+          const coordsStr = `${city.lat.toFixed(4)}, ${city.lon.toFixed(4)}`;
           return (
             <button
-              key={sec.name}
+              key={city.id}
               type="button"
               onClick={() => {
-                onGpsCoordsChange(sec.coords);
+                setUserSelectedNodeId(null);
+                onGpsCoordsChange(coordsStr);
                 if (onFlyoverStageChange) onFlyoverStageChange("city");
               }}
               className={`px-3 py-1 rounded-full text-[11px] font-mono font-bold transition-all cursor-pointer ${
@@ -394,7 +330,7 @@ export function IncidentRadar({
                   : "bg-slate-900/80 text-slate-300 hover:bg-slate-800 border border-slate-800"
               }`}
             >
-              {sec.name}
+              {city.shortName}
             </button>
           );
         })}
@@ -436,7 +372,7 @@ export function IncidentRadar({
                 }`}
               >
                 <MapPin className="w-3.5 h-3.5 text-red-500" />
-                <span className="font-bold">{activeCityName}</span>
+                <span className="font-bold">{activeCityDisplayName}</span>
                 <span className="opacity-60">·</span>
                 <span>
                   {parsedCoords.lat.toFixed(4)}° N, {parsedCoords.lon.toFixed(4)}° E
@@ -444,23 +380,17 @@ export function IncidentRadar({
               </div>
             </div>
 
-            {/* Central Tactical Reticle Framing 3D Earth Exactly in the Center */}
+            {/* Central Optical Targeting Scope Reticle (Framing the 3D pin directly on the optical axis) */}
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-              {/* 5km Outer Perimeter Ring */}
-              <div className="w-[340px] h-[340px] sm:w-[380px] sm:h-[380px] rounded-full border border-cyan-500/30 flex items-center justify-center relative">
-                <span className="absolute top-2 text-[10px] font-mono text-cyan-500/70 uppercase tracking-wider">
-                  5.0 km Hazard Perimeter
+              <div className="w-[300px] h-[300px] sm:w-[340px] sm:h-[340px] rounded-full border border-cyan-500/25 flex items-center justify-center relative">
+                <span className="absolute top-2 text-[9px] font-mono text-cyan-500/70 uppercase tracking-widest">
+                  Optical HUD Scope · Camera Center
                 </span>
-                {/* 2km Middle Secondary Ring */}
-                <div className="w-[220px] h-[220px] sm:w-[250px] sm:h-[250px] rounded-full border border-amber-500/40 flex items-center justify-center relative">
-                  <span className="absolute top-1 text-[9px] font-mono text-amber-500/70 uppercase tracking-wider">
-                    2.0 km Secondary Ring
-                  </span>
-                  {/* 0.5km Inner Immediate Ring & Crosshair */}
-                  <div className="w-28 h-28 rounded-full border-2 border-red-500/60 flex items-center justify-center relative animate-pulse">
-                    <Crosshair className="w-7 h-7 text-red-500 opacity-90" />
-                    {/* Glowing Center Pin Dot */}
-                    <div className="w-2 h-2 rounded-full bg-red-500 shadow-md shadow-red-500" />
+
+                <div className="w-[180px] h-[180px] rounded-full border border-amber-500/30 flex items-center justify-center relative">
+                  {/* Immediate Crosshair Bullseye Framing the 3D Pin */}
+                  <div className="w-20 h-20 rounded-full border border-red-500/60 flex items-center justify-center relative">
+                    <Target className="w-7 h-7 text-red-500/80 animate-pulse" />
                   </div>
                 </div>
               </div>
@@ -475,7 +405,7 @@ export function IncidentRadar({
                     : "bg-slate-900/80 text-slate-300"
                 }`}
               >
-                Epicenter locked on camera optical axis · Hover cursor for inertial tilt
+                Georeferenced WGS84 surface pin · 3D rings anchored to planet
               </div>
               <div
                 className={`px-3 py-1 rounded-full text-[11px] font-mono font-bold backdrop-blur-md ${
@@ -489,7 +419,7 @@ export function IncidentRadar({
             </div>
           </div>
         ) : viewModeTab === "satellite" ? (
-          /* Google Satellite Imagery Layer (Grounded via Google Maps Platform skill) */
+          /* Google Satellite Imagery Layer */
           <div className="relative w-full h-[400px] rounded-2xl overflow-hidden">
             <iframe
               title="Google Maps Satellite Emergency Layer"
@@ -505,7 +435,7 @@ export function IncidentRadar({
               }`}
             >
               <Layers className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Google Maps Platform Satellite View: {activeCityName}</span>
+              <span>Google Maps Platform Satellite View: {activeCity.name}</span>
             </div>
           </div>
         ) : (
@@ -519,16 +449,6 @@ export function IncidentRadar({
               }`}
               loading="lazy"
             />
-            {/* Tactical Radar Concentric Ripple Rings Overlay */}
-            <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
-              <div className="w-72 h-72 rounded-full border border-cyan-500/35 flex items-center justify-center relative">
-                <div className="w-48 h-48 rounded-full border border-amber-500/45 flex items-center justify-center">
-                  <div className="w-24 h-24 rounded-full border-2 border-red-500/60 bg-red-500/10 animate-pulse flex items-center justify-center">
-                    <div className="w-3 h-3 rounded-full bg-red-600 shadow-lg shadow-red-500" />
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         )}
 
@@ -537,11 +457,11 @@ export function IncidentRadar({
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-cyan-500 shrink-0" />
             <span className="font-semibold">
-              Primary Routing Destination: {selectedNode.name} ({selectedNode.distanceKm} km · ~{selectedNode.etaMin} min ETA)
+              Primary Routing Destination: {selectedNode?.name || "Emergency Station"} ({selectedNode?.distanceKm || 1.2} km · ~{selectedNode?.etaMin || 3} min ETA)
             </span>
           </div>
           <a
-            href={selectedNode.googleMapsUrl}
+            href={selectedNode?.googleMapsUrl || `https://www.google.com/maps/search/emergency+near+${parsedCoords.lat},${parsedCoords.lon}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition cursor-pointer shadow-xs"
@@ -552,20 +472,20 @@ export function IncidentRadar({
         </div>
       </div>
 
-      {/* 5. Lower Section: Verified Emergency Responders & Live Environmental Telemetry */}
+      {/* 5. Lower Section: Dynamic Emergency Responders & Live Environmental Telemetry */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* Left 7 Columns: Verified Emergency Dispatch Nodes */}
         <div className="lg:col-span-7 space-y-3">
           <div className="flex items-center justify-between text-xs font-extrabold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">
             <span>Nearest Verified Emergency Response Units</span>
             <span className="text-[10px] font-mono opacity-65 font-normal">
-              {activeCityName.split(",")[0]}
+              {activeCity.name}
             </span>
           </div>
 
           <div className="space-y-2">
             {responderNodes.map((node) => {
-              const isSelected = node.id === selectedNode.id;
+              const isSelected = node.id === selectedNode?.id;
               const Icon =
                 node.category === "MEDICAL"
                   ? Hospital
@@ -578,12 +498,12 @@ export function IncidentRadar({
               return (
                 <div
                   key={node.id}
-                  onClick={() => setSelectedNodeId(node.id)}
+                  onClick={() => setUserSelectedNodeId(node.id)}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
-                      setSelectedNodeId(node.id);
+                      setUserSelectedNodeId(node.id);
                     }
                   }}
                   className={`p-3.5 rounded-2xl backdrop-blur-md transition cursor-pointer flex items-center justify-between gap-3 ${
@@ -657,7 +577,7 @@ export function IncidentRadar({
 
         {/* Right 5 Columns: Environmental Telemetry & Predictive Ripple Effects */}
         <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
-          {/* Real Live Local Weather & Atmosphere Telemetry (Truth-Grounded) */}
+          {/* Grounded Local Weather & Atmosphere Telemetry */}
           <div
             className={`p-4 rounded-2xl backdrop-blur-md border ${
               isLight
@@ -671,24 +591,24 @@ export function IncidentRadar({
                 <span>Live Environmental Telemetry</span>
               </span>
               <span className="text-[10px] font-mono opacity-70">
-                {activeCityName.split(",")[0]}
+                {activeCity.name}
               </span>
             </div>
 
             <div className="grid grid-cols-3 gap-2 text-center pt-1">
               <div className="p-2 rounded-xl bg-cyan-500/10">
                 <div className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400">TEMP</div>
-                <div className="text-sm font-bold font-mono">27°C</div>
-                <div className="text-[9px] opacity-65">Fair Skies</div>
+                <div className="text-sm font-bold font-mono">{activeCity.weather.tempC}°C</div>
+                <div className="text-[9px] opacity-65">{activeCity.weather.condition}</div>
               </div>
               <div className="p-2 rounded-xl bg-amber-500/10">
                 <div className="text-[10px] font-mono text-amber-600 dark:text-amber-400">WIND</div>
-                <div className="text-sm font-bold font-mono">9 km/h</div>
-                <div className="text-[9px] opacity-65">NW Breeze</div>
+                <div className="text-sm font-bold font-mono">{activeCity.weather.windKmh} km/h</div>
+                <div className="text-[9px] opacity-65">{activeCity.weather.windDirection} Breeze</div>
               </div>
               <div className="p-2 rounded-xl bg-emerald-500/10">
                 <div className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">AIR VIS</div>
-                <div className="text-sm font-bold font-mono">9.8 km</div>
+                <div className="text-sm font-bold font-mono">{activeCity.weather.visibilityKm} km</div>
                 <div className="text-[9px] opacity-65">Optimum</div>
               </div>
             </div>
@@ -725,7 +645,7 @@ export function IncidentRadar({
 
           {/* Ethical Geospatial Attribution Footnote */}
           <div className="text-[10px] font-mono opacity-65 leading-tight px-1">
-            Grounded in Google Maps Platform & Open Geospatial standards. Emergency links connect to official Indian hotlines (112, 108, 101, 1070).
+            Grounded in Google Maps Platform & WGS84 standards. Emergency links connect to official Indian emergency dispatch (112, 108, 101, 1070).
           </div>
         </div>
       </div>

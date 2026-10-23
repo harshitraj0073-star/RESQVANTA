@@ -8,11 +8,16 @@ import { SeverityLevel } from "@/types/triage";
 import { UIStrings } from "@/lib/translations";
 import {
   createStylizedEarthTexture,
-  latLonToVector3,
-  latLonToTargetRotation,
   GLOBAL_EMERGENCY_HUBS,
   EMERGENCY_ARC_PAIRS,
 } from "@/lib/earthContinents";
+import {
+  GROUNDED_CITIES,
+  resolveTargetCity,
+  getSurfaceOrientation,
+  latLonToSphereVector3,
+  latLonToCameraEuler,
+} from "@/lib/geospatial";
 
 export interface HotspotData {
   id: string;
@@ -130,9 +135,9 @@ export function HolographicCore({
 
   // View-mode aware opacity
   const sceneOpacityMultiplier =
-    viewMode === "hero" ? 1.0 : viewMode === "workspace" ? 0.28 : 0.88;
+    viewMode === "hero" ? 1.0 : viewMode === "workspace" ? 0.28 : 0.95;
 
-  // Stylized procedural Earth texture with continents, coastlines, graticules & dot matrix
+  // Stylized procedural Earth texture with authentic continents, coastlines & biomes
   const earthTexture = useMemo(() => {
     return createStylizedEarthTexture(isLight, themeColor);
   }, [isLight, themeColor]);
@@ -141,7 +146,7 @@ export function HolographicCore({
   const { hubVectors, arcCurves } = useMemo(() => {
     const vectors = GLOBAL_EMERGENCY_HUBS.map((hub) => ({
       ...hub,
-      pos: latLonToVector3(hub.lat, hub.lon, EARTH_RADIUS + 0.015),
+      pos: latLonToSphereVector3(hub.lat, hub.lon, EARTH_RADIUS + 0.015),
     }));
 
     const curves = EMERGENCY_ARC_PAIRS.map(([idxA, idxB], i) => {
@@ -170,39 +175,55 @@ export function HolographicCore({
     return { hubVectors: vectors, arcCurves: curves };
   }, []);
 
-  // Parse target GPS coordinates for Radar zoom & orientation
-  const parsedCoords = useMemo(() => {
-    if (!gpsCoords) {
-      return { lat: 18.5204, lon: 73.8567, isDefault: true };
-    }
-    const parts = gpsCoords.split(",").map((s) => parseFloat(s.trim()));
-    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-      return { lat: parts[0], lon: parts[1], isDefault: false };
-    }
-    return { lat: 18.5204, lon: 73.8567, isDefault: true };
+  // Authoritative Target City resolution using WGS84 geospatial engine
+  const targetResolution = useMemo(() => {
+    return resolveTargetCity(gpsCoords);
   }, [gpsCoords]);
+
+  // Pre-calculate 3D vectors and surface orientation for all grounded Indian cities
+  const indianCityMarkers = useMemo(() => {
+    return GROUNDED_CITIES.map((city) => {
+      const { position, quaternion } = getSurfaceOrientation(
+        city.lat,
+        city.lon,
+        EARTH_RADIUS + 0.012
+      );
+      const isSelected = targetResolution.city.id === city.id;
+      return {
+        ...city,
+        position,
+        quaternion,
+        isSelected,
+      };
+    });
+  }, [targetResolution.city.id]);
+
+  // If a custom GPS pin is provided that is not one of the preset cities, compute its marker
+  const customGpsMarker = useMemo(() => {
+    if (targetResolution.isMatchedPreset) return null;
+    const { position, quaternion } = getSurfaceOrientation(
+      targetResolution.coords.lat,
+      targetResolution.coords.lon,
+      EARTH_RADIUS + 0.012
+    );
+    return {
+      position,
+      quaternion,
+      name: "Tactical Pin",
+    };
+  }, [targetResolution]);
 
   // Target Euler rotation to bring target coordinates directly facing the camera
   const targetRadarRot = useMemo(() => {
     if (flyoverStage === "country") {
-      // Orbit directly over India Subcontinent (Center of India: 22.0° N, 79.0° E)
-      return latLonToTargetRotation(22.0, 79.0);
+      // Orbit directly over Indian Subcontinent center (22.0° N, 79.0° E)
+      return latLonToCameraEuler(22.0, 79.0);
     }
-    return latLonToTargetRotation(parsedCoords.lat, parsedCoords.lon);
-  }, [flyoverStage, parsedCoords]);
-
-  // 3D vector and surface orientation on the sphere surface for the epicenter beacon
-  const { epicenterVector, epicenterQuaternion } = useMemo(() => {
-    const pos = latLonToVector3(
-      parsedCoords.lat,
-      parsedCoords.lon,
-      EARTH_RADIUS + 0.018
+    return latLonToCameraEuler(
+      targetResolution.coords.lat,
+      targetResolution.coords.lon
     );
-    const normal = pos.clone().normalize();
-    const q = new THREE.Quaternion();
-    q.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
-    return { epicenterVector: pos, epicenterQuaternion: q };
-  }, [parsedCoords]);
+  }, [flyoverStage, targetResolution.coords]);
 
   // Subtle orbital atmosphere dust particles
   const orbitalParticles = useMemo(() => {
@@ -231,9 +252,9 @@ export function HolographicCore({
     }
     if (viewMode === "hero") return new THREE.Vector3(0, 0.18, 5.05);
     if (viewMode === "radar") {
-      if (flyoverStage === "space") return new THREE.Vector3(0, 0.1, 4.85); // Space Orbit
-      if (flyoverStage === "country") return new THREE.Vector3(0, 0, 3.65); // Country Orbit
-      return new THREE.Vector3(0, 0, 2.75); // City Descent
+      if (flyoverStage === "space") return new THREE.Vector3(0, 0.08, 4.85); // Space Orbit (~12,000 km)
+      if (flyoverStage === "country") return new THREE.Vector3(0, 0, 3.65); // Country Orbit (~2,500 km)
+      return new THREE.Vector3(0, 0, 2.75); // City Descent (~150 km)
     }
     return new THREE.Vector3(1.85, 0.1, 6.3);
   }, [viewMode, activeHotspot, flyoverStage]);
@@ -257,7 +278,7 @@ export function HolographicCore({
       deltaFactor
     );
 
-    // 2. Tactical Group Centering (Centered on camera axis for 100% true coordinate alignment)
+    // 2. Tactical Group Centering (Centered on camera optical axis for 100% true coordinate alignment)
     if (groupRef.current) {
       const targetGroupPosX = 0;
       groupRef.current.position.x = THREE.MathUtils.damp(
@@ -269,7 +290,7 @@ export function HolographicCore({
     }
 
     // 3. Camera Dolly Zoom
-    const cameraLerpSpeed = viewMode === "radar" ? 2.8 : 2.2;
+    const cameraLerpSpeed = viewMode === "radar" ? 3.0 : 2.2;
     camera.position.lerp(targetCameraPos, deltaFactor * cameraLerpSpeed);
     camera.lookAt(0, 0, 0);
 
@@ -278,34 +299,38 @@ export function HolographicCore({
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+    // In radar mode, lock parallax so coordinate crosshair remains locked to target pin
     const parallaxWeight = prefersReducedMotion
       ? 0
       : viewMode === "hero"
       ? 1.0
       : viewMode === "workspace"
       ? 0.35
-      : 0.12;
+      : 0.04;
 
     // 4. Earth Rotation & Orientation Transition
     if (earthRotationGroupRef.current) {
       if (viewMode === "radar") {
         // Smoothly orient Earth towards target GPS coordinates
+        const targetRotX = targetRadarRot[0] - pointerRef.current.y * 0.05 * parallaxWeight;
+        const targetRotY = targetRadarRot[1] + pointerRef.current.x * 0.05 * parallaxWeight;
+
         earthRotationGroupRef.current.rotation.x = THREE.MathUtils.damp(
           earthRotationGroupRef.current.rotation.x,
-          targetRadarRot[0],
-          3.5,
+          targetRotX,
+          3.8,
           deltaFactor
         );
         earthRotationGroupRef.current.rotation.y = THREE.MathUtils.damp(
           earthRotationGroupRef.current.rotation.y,
-          targetRadarRot[1],
-          3.5,
+          targetRotY,
+          3.8,
           deltaFactor
         );
         earthRotationGroupRef.current.rotation.z = THREE.MathUtils.damp(
           earthRotationGroupRef.current.rotation.z,
           0,
-          3.5,
+          3.8,
           deltaFactor
         );
       } else {
@@ -386,8 +411,8 @@ export function HolographicCore({
     if (radarRippleGroupRef.current) {
       const tNow = state.clock.elapsedTime;
       radarRippleGroupRef.current.children.forEach((child, idx) => {
-        const progress = (tNow * 0.8 + idx * 0.33) % 1;
-        const scale = 0.08 + progress * 0.45;
+        const progress = (tNow * 1.1 + idx * 0.33) % 1;
+        const scale = 0.03 + progress * 0.14;
         child.scale.set(scale, scale, 1);
         const mesh = child as THREE.Mesh;
         if (mesh.material) {
@@ -401,10 +426,10 @@ export function HolographicCore({
   return (
     <group ref={groupRef}>
       {/* Theme-Aware Studio & Planetary Lighting */}
-      <ambientLight intensity={isLight ? 1.55 : 0.85} />
+      <ambientLight intensity={isLight ? 1.6 : 0.9} />
       <directionalLight
         position={[5, 6, 6]}
-        intensity={isLight ? 1.9 : 1.85}
+        intensity={isLight ? 1.95 : 1.85}
         color={isLight ? "#ffffff" : "#f8fafc"}
       />
       <pointLight
@@ -454,8 +479,8 @@ export function HolographicCore({
                   : 0.94
                 : viewMode === "radar"
                 ? isLight
-                  ? 0.92
-                  : 0.95
+                  ? 0.96
+                  : 0.98
                 : isLight
                 ? 0.34
                 : 0.3
@@ -463,21 +488,21 @@ export function HolographicCore({
           />
         </mesh>
 
-        {/* Latitude/Longitude Geodesic Overlay Shell */}
+        {/* Latitude/Longitude Geodesic Defense Shell */}
         <mesh>
           <sphereGeometry args={[EARTH_RADIUS + 0.006, 24, 18]} />
           <meshBasicMaterial
             color={themeColor}
             wireframe
             transparent
-            opacity={(isLight ? 0.07 : 0.09) * sceneOpacityMultiplier}
+            opacity={(isLight ? 0.06 : 0.08) * sceneOpacityMultiplier}
           />
         </mesh>
 
         {/* Global Emergency Hub Beacons on Continents */}
         {hubVectors.map((hub) => (
           <mesh key={hub.name} position={hub.pos}>
-            <sphereGeometry args={[hub.isPrimary ? 0.032 : 0.02, 12, 12]} />
+            <sphereGeometry args={[hub.isPrimary ? 0.028 : 0.018, 12, 12]} />
             <meshBasicMaterial
               color={
                 hub.isPrimary
@@ -487,7 +512,7 @@ export function HolographicCore({
                   : themeColor
               }
               transparent
-              opacity={0.9 * sceneOpacityMultiplier}
+              opacity={0.85 * sceneOpacityMultiplier}
             />
           </mesh>
         ))}
@@ -504,9 +529,9 @@ export function HolographicCore({
                   : "#fbbf24"
                 : themeColor
             }
-            lineWidth={arc.isPrimary ? 1.6 : 1.1}
+            lineWidth={arc.isPrimary ? 1.5 : 1.0}
             transparent
-            opacity={(arc.isPrimary ? 0.62 : 0.36) * sceneOpacityMultiplier}
+            opacity={(arc.isPrimary ? 0.58 : 0.32) * sceneOpacityMultiplier}
           />
         ))}
 
@@ -514,7 +539,7 @@ export function HolographicCore({
         <group ref={signalPulsesRef}>
           {arcCurves.map((arc) => (
             <mesh key={`pulse-${arc.id}`}>
-              <sphereGeometry args={[0.028, 10, 10]} />
+              <sphereGeometry args={[0.026, 10, 10]} />
               <meshBasicMaterial
                 color={isLight ? "#0284c7" : "#fde047"}
                 transparent
@@ -524,42 +549,137 @@ export function HolographicCore({
           ))}
         </group>
 
-        {/* ==================== 3D TACTICAL EPICENTER & RADAR RIPPLES ==================== */}
+        {/* ==================== 3D GEOREFERENCED INDIAN CITY MARKERS ==================== */}
         {viewMode === "radar" && (
-          <group position={epicenterVector} quaternion={epicenterQuaternion}>
-            {/* Glowing Tactical Epicenter Marker */}
-            <mesh position={[0, 0, 0.025]}>
-              <sphereGeometry args={[0.04, 16, 16]} />
-              <meshBasicMaterial
-                color={isLight ? "#dc2626" : "#f59e0b"}
-                transparent
-                opacity={0.95}
-              />
-            </mesh>
+          <group>
+            {/* Render all 5 Indian Cities with true surface-normal alignment */}
+            {indianCityMarkers.map((city) => {
+              if (city.isSelected) {
+                return (
+                  <group
+                    key={`active-city-${city.id}`}
+                    position={city.position}
+                    quaternion={city.quaternion}
+                  >
+                    {/* Primary Glowing Epicenter Sphere */}
+                    <mesh position={[0, 0, 0.025]}>
+                      <sphereGeometry args={[0.04, 16, 16]} />
+                      <meshBasicMaterial
+                        color={isLight ? "#dc2626" : "#f59e0b"}
+                        transparent
+                        opacity={0.95}
+                      />
+                    </mesh>
 
-            <mesh position={[0, 0, 0.07]}>
-              <cylinderGeometry args={[0.005, 0.005, 0.12, 8]} />
-              <meshBasicMaterial
-                color={isLight ? "#0891b2" : "#22d3ee"}
-                transparent
-                opacity={0.85}
-              />
-            </mesh>
+                    {/* Elevated Vertical Beacon Needle */}
+                    <mesh position={[0, 0, 0.075]} rotation={[Math.PI / 2, 0, 0]}>
+                      <cylinderGeometry args={[0.006, 0.006, 0.14, 8]} />
+                      <meshBasicMaterial
+                        color={isLight ? "#0891b2" : "#22d3ee"}
+                        transparent
+                        opacity={0.9}
+                      />
+                    </mesh>
 
-            {/* Concentric Expanding Radar Pulse Waves on the Globe Surface */}
-            <group ref={radarRippleGroupRef}>
-              {[0, 1, 2].map((ringIdx) => (
-                <mesh key={`radar-ripple-${ringIdx}`} position={[0, 0, 0.008]}>
-                  <ringGeometry args={[0.88, 1.0, 32]} />
-                  <meshBasicMaterial
-                    color={isLight ? "#0891b2" : "#38bdf8"}
-                    side={THREE.DoubleSide}
-                    transparent
-                    opacity={0.7}
-                  />
+                    {/* True 3D Geodesic Surface Rings (0.5km, 2km, 5km equivalents) */}
+                    {/* Immediate Zone (0.5 km) */}
+                    <mesh position={[0, 0, 0.004]}>
+                      <ringGeometry args={[0.032, 0.038, 32]} />
+                      <meshBasicMaterial
+                        color={isLight ? "#dc2626" : "#ef4444"}
+                        side={THREE.DoubleSide}
+                        transparent
+                        opacity={0.85}
+                      />
+                    </mesh>
+
+                    {/* Secondary Sector (2.0 km) */}
+                    <mesh position={[0, 0, 0.003]}>
+                      <ringGeometry args={[0.072, 0.078, 32]} />
+                      <meshBasicMaterial
+                        color={isLight ? "#d97706" : "#f59e0b"}
+                        side={THREE.DoubleSide}
+                        transparent
+                        opacity={0.7}
+                      />
+                    </mesh>
+
+                    {/* Regional Perimeter (5.0 km) */}
+                    <mesh position={[0, 0, 0.002]}>
+                      <ringGeometry args={[0.122, 0.128, 32]} />
+                      <meshBasicMaterial
+                        color={isLight ? "#0891b2" : "#38bdf8"}
+                        side={THREE.DoubleSide}
+                        transparent
+                        opacity={0.55}
+                      />
+                    </mesh>
+
+                    {/* Dynamic Concentric Expanding Radar Waves */}
+                    <group ref={radarRippleGroupRef}>
+                      {[0, 1, 2].map((ringIdx) => (
+                        <mesh
+                          key={`radar-ripple-${ringIdx}`}
+                          position={[0, 0, 0.005]}
+                        >
+                          <ringGeometry args={[0.9, 1.0, 32]} />
+                          <meshBasicMaterial
+                            color={isLight ? "#0891b2" : "#38bdf8"}
+                            side={THREE.DoubleSide}
+                            transparent
+                            opacity={0.75}
+                          />
+                        </mesh>
+                      ))}
+                    </group>
+                  </group>
+                );
+              }
+
+              // Inactive Indian City: Crisp Georeferenced Reference Marker
+              return (
+                <group
+                  key={`ref-city-${city.id}`}
+                  position={city.position}
+                  quaternion={city.quaternion}
+                >
+                  <mesh position={[0, 0, 0.015]}>
+                    <sphereGeometry args={[0.02, 12, 12]} />
+                    <meshBasicMaterial
+                      color={isLight ? "#0284c7" : "#38bdf8"}
+                      transparent
+                      opacity={0.8}
+                    />
+                  </mesh>
+
+                  <mesh position={[0, 0, 0.035]} rotation={[Math.PI / 2, 0, 0]}>
+                    <cylinderGeometry args={[0.003, 0.003, 0.06, 6]} />
+                    <meshBasicMaterial
+                      color={isLight ? "#64748b" : "#94a3b8"}
+                      transparent
+                      opacity={0.65}
+                    />
+                  </mesh>
+                </group>
+              );
+            })}
+
+            {/* Custom GPS marker (if user locked a location outside the 5 presets) */}
+            {customGpsMarker && (
+              <group
+                position={customGpsMarker.position}
+                quaternion={customGpsMarker.quaternion}
+              >
+                <mesh position={[0, 0, 0.02]}>
+                  <sphereGeometry args={[0.035, 16, 16]} />
+                  <meshBasicMaterial color="#10b981" transparent opacity={0.9} />
                 </mesh>
-              ))}
-            </group>
+                <mesh position={[0, 0, 0.06]} rotation={[Math.PI / 2, 0, 0]}>
+                  <cylinderGeometry args={[0.005, 0.005, 0.1, 8]} />
+                  <meshBasicMaterial color="#34d399" transparent opacity={0.85} />
+                </mesh>
+              </group>
+            )}
           </group>
         )}
       </group>

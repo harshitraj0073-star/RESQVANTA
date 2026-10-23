@@ -51,6 +51,7 @@ export default function SceneCanvas({
             enableZoom={false}
             enablePan={false}
             autoRotate={false}
+            enableRotate={viewMode !== "radar"}
             dampingFactor={0.05}
           />
         </Suspense>
