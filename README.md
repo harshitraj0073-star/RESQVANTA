@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ResQvanta AI — 3D Holographic Emergency Triage & Dispatch Bridge
 
-## Getting Started
+> **From Human Panic to Verified Action.**  
+> Built for **PromptWars 2026 × ALTA School of Technology** (Hack2Skill).  
+> **Vertical:** Societal Benefit — Universal Bridge Between Human Intent and Complex Systems.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚨 The Problem
+During disasters and accidents (the "Golden Hour"), humans panic. Bystanders submit chaotic, multilingual (English, Hindi, Hinglish, Marathi) messages or blurry photos. Meanwhile, national dispatch centers (112 / 108 / NDRF) require structured, verified incident parameters: What is the hazard? Who is trapped? What critical facts are missing?
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**ResQvanta AI** acts as the universal bridge: ingesting messy multimodal input and instantaneously outputting an epistemically honest triage card, interactive 3D spatial threat telemetry, and a one-click 112 dispatch packet.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## ⚡ Core Architecture & Highlights
 
-## Learn More
+1. **Epistemic Verification Matrix (Anti-Hallucination):**
+   - Strictly separates **User Reported Facts**, **AI Visual Inferences**, and **Critical Missing Info**.
+   - Includes an interactive **Re-Triage Loop** allowing users to supply missing parameters to raise the confidence score dynamically.
+   - Built-in Non-Emergency guardrail (e.g. spilled coffee safely flagged as non-emergency).
 
-To learn more about Next.js, take a look at the following resources:
+2. **Zero-Lag 60FPS 3D Spatial Threat Core:**
+   - Procedural WebGL Fibonacci particle globe & rotating telemetry rings in Three.js (`@react-three/fiber`).
+   - Capped DPR (`1.5`), zero heavy 50MB 3D model downloads, zero GPU choke.
+   - Dynamically shifts state: `IDLE (Cyan)` → `SCANNING (Indigo)` → `CRITICAL (Red)` → `SAFE (Emerald)`.
+   - 1-Click **2D Lite Mode** toggle for emergency low-battery conservation.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. **Multimodal Ingestion Engine:**
+   - Multilingual text & Hinglish voice recognition via Web Speech API.
+   - Client-side image compression & analysis via Google Gemini 2.5 Flash (`@google/genai`).
+   - Device GPS coordinate lock.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+4. **112 / 108 Rapid Action Suite:**
+   - Standardized 1-click Dispatch Packet copyable directly to 112 operators.
+   - Direct clickable `tel:112` and `tel:108` emergency triggers.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🛠️ Tech Stack
+- **Framework:** Next.js (App Router), React 19, TypeScript
+- **Styling:** Tailwind CSS, Glassmorphic HUD Design System
+- **3D Graphics:** Three.js, React Three Fiber, React Three Drei
+- **AI Engine:** Google Gemini 2.5 Flash via `@google/genai` SDK
+- **Icons & Telemetry:** Lucide Icons
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 🚀 Getting Started Locally
+
+1. Clone repository:
+   ```bash
+   git clone https://github.com/harshitraj0073-star/RESQVANTA.git
+   cd RESQVANTA
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Configure Environment:
+   Create `.env.local`:
+   ```bash
+   GEMINI_API_KEY=your_gemini_api_key_here
+   ```
+
+4. Run Development Server:
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## 👤 Author
+**Harshit Raj**  
+B.Tech Computer Science & Engineering, Ajeenkya DY Patil University (ADYPU), Pune  
+GitHub: [@harshitraj0073-star](https://github.com/harshitraj0073-star)
