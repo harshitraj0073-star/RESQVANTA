@@ -76,7 +76,7 @@ export default function ResQvantaApp() {
         // SSR
       }
     }
-    return "light";
+    return "dark";
   });
   const [is3DMode, setIs3DMode] = useState(true);
   const [activeHotspot, setActiveHotspot] = useState<string | null>(

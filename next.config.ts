@@ -2,14 +2,16 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
-  cacheComponents: true,
-  partialPrefetching: true,
   compress: true,
   poweredByHeader: false,
   headers: async () => [
     {
       source: "/:path*",
       headers: [
+        {
+          key: "Cache-Control",
+          value: "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+        },
         {
           key: "X-DNS-Prefetch-Control",
           value: "on",
