@@ -204,7 +204,7 @@ export function ActionCard({
         className={`px-4 py-2.5 rounded-2xl text-xs flex flex-wrap items-center justify-between gap-2 border border-transparent ${
           isLight
             ? "bg-slate-100/90 text-slate-800"
-            : "bg-slate-900/90 text-slate-200 border-white/10"
+            : "bg-slate-900/90 text-slate-200"
         }`}
       >
         <div className="truncate max-w-full">
@@ -225,7 +225,7 @@ export function ActionCard({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <span
-              className={`text-xs font-extrabold uppercase tracking-wider px-3.5 py-1.5 rounded-full shadow-sm border border-white/10 ${urgencyBadgeStyles(
+              className={`text-xs font-extrabold uppercase tracking-wider px-3.5 py-1.5 rounded-full shadow-sm border border-transparent ${urgencyBadgeStyles(
                 report.severity_level
               )}`}
             >
@@ -242,8 +242,8 @@ export function ActionCard({
 
           {/* Quick View vs Detailed Evidence Toggle */}
           <div
-            className={`inline-flex rounded-full p-1 text-xs border ${
-              isLight ? "bg-slate-100 border-slate-200" : "bg-slate-950 border-white/10"
+            className={`inline-flex rounded-full p-1 text-xs border border-transparent ${
+              isLight ? "bg-slate-100" : "bg-slate-950"
             }`}
           >
             <button
@@ -295,10 +295,10 @@ export function ActionCard({
 
         {/* Animated Dispatch Bridge (Magic UI Pattern) */}
         <div
-          className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs ${
+          className={`p-3.5 rounded-2xl border border-transparent flex flex-col sm:flex-row items-center justify-between gap-3 text-xs ${
             isLight
-              ? "bg-cyan-50/80 border-cyan-200"
-              : "bg-cyan-950/40 border-cyan-500/20"
+              ? "bg-cyan-50/80"
+              : "bg-cyan-950/40"
           }`}
         >
           <div className="flex items-center gap-2 font-mono text-[11px] text-cyan-600 dark:text-cyan-300 font-bold">

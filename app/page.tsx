@@ -70,7 +70,7 @@ export default function ResQvantaApp() {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof window !== "undefined") {
       try {
-        const saved = localStorage.getItem("resqvanta_theme");
+        const saved = localStorage.getItem("resqvanta_theme_v2");
         if (saved === "dark" || saved === "light") return saved;
       } catch {
         // SSR
@@ -136,7 +136,7 @@ export default function ResQvantaApp() {
     setTheme(nextTheme);
     document.documentElement.setAttribute("data-theme", nextTheme);
     try {
-      localStorage.setItem("resqvanta_theme", nextTheme);
+      localStorage.setItem("resqvanta_theme_v2", nextTheme);
     } catch {
       // ignore
     }
@@ -683,10 +683,10 @@ export default function ResQvantaApp() {
               <div
                 role="status"
                 aria-live="polite"
-                className={`rounded-3xl p-6 md:p-8 backdrop-blur-md space-y-4 border animate-in fade-in ${
+                className={`rounded-3xl p-6 md:p-8 backdrop-blur-2xl space-y-4 border border-transparent animate-in fade-in shadow-2xl ${
                   isLight
-                    ? "bg-white/80 border-slate-200 text-slate-900 shadow-sm"
-                    : "bg-[#121e30]/85 border-white/10 text-slate-100"
+                    ? "bg-white/80 text-slate-900 shadow-sm"
+                    : "bg-slate-900/60 text-slate-100"
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -716,13 +716,15 @@ export default function ResQvantaApp() {
 
                 <div className="flex items-center justify-between pt-1 text-xs">
                   <span>{t.immediateDangerNote}</span>
-                  <a
+                  <ShinyButton
+                    variant="red"
+                    size="sm"
                     href="tel:112"
-                    className="inline-flex items-center gap-1.5 bg-red-600 text-white font-bold px-3.5 py-1.5 rounded-full"
+                    className="font-bold"
                   >
                     <PhoneCall className="w-3.5 h-3.5" />
                     <span>{t.call112}</span>
-                  </a>
+                  </ShinyButton>
                 </div>
               </div>
             )}
@@ -741,22 +743,22 @@ export default function ResQvantaApp() {
                 />
 
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                  <button
-                    type="button"
+                  <ShinyButton
+                    variant="slate"
+                    size="md"
                     onClick={() => setIsHistoryOpen(true)}
-                    className="btn-3d-slate inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-bold transition cursor-pointer"
                   >
                     <span>📋 View Session History ({incidentFeed.length})</span>
-                  </button>
+                  </ShinyButton>
 
-                  <button
-                    type="button"
+                  <ShinyButton
+                    variant="cyan"
+                    size="md"
                     onClick={() => setViewMode("radar")}
-                    className="btn-3d-cyan inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl text-xs font-bold shadow-xl transition cursor-pointer"
                   >
                     <Radar className="w-4 h-4" />
                     <span>Inspect Live Sector Radar & Hospital Map →</span>
-                  </button>
+                  </ShinyButton>
                 </div>
               </div>
             )}
@@ -777,16 +779,16 @@ export default function ResQvantaApp() {
               onFlyoverStageChange={setFlyoverStage}
             />
 
-            <div className="space-y-4 pt-2 border-t border-slate-500/15">
+            <div className="space-y-4 pt-2 border-t border-transparent">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <h2 className="text-xl font-extrabold">{t.historyHeading}</h2>
-                <button
-                  type="button"
+                <ShinyButton
+                  variant="cyan"
+                  size="md"
                   onClick={() => setViewMode("workspace")}
-                  className="px-5 py-2.5 rounded-full bg-cyan-600 text-white text-xs font-bold hover:bg-cyan-500 transition cursor-pointer self-start"
                 >
-                  {t.newAnalysisBtn}
-                </button>
+                  <span>{t.newAnalysisBtn}</span>
+                </ShinyButton>
               </div>
 
             {incidentFeed.length === 0 ? (

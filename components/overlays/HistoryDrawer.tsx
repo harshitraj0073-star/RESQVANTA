@@ -62,14 +62,14 @@ export function HistoryDrawer({
   const getUrgencyBadge = (level: string) => {
     switch (level) {
       case "CRITICAL":
-        return "bg-red-500/20 text-red-400 border border-red-500/30";
+        return "bg-red-500/20 text-red-400 border border-transparent shadow-sm";
       case "HIGH":
-        return "bg-amber-500/20 text-amber-400 border border-amber-500/30";
+        return "bg-amber-500/20 text-amber-400 border border-transparent shadow-sm";
       case "MODERATE":
       case "UNCERTAIN":
-        return "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30";
+        return "bg-yellow-500/20 text-yellow-400 border border-transparent shadow-sm";
       default:
-        return "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+        return "bg-emerald-500/20 text-emerald-400 border border-transparent shadow-sm";
     }
   };
 
