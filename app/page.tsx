@@ -335,7 +335,7 @@ export default function ResQvantaApp() {
       />
 
       {/* 3. Truly Open-Canvas Floating Content Layer (No Bulky Opaque Panels) */}
-      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 md:px-8 py-6 flex flex-col justify-center pointer-events-none">
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 md:px-8 pt-4 pb-24 lg:py-6 flex flex-col justify-center pointer-events-none">
         {/* ==================== ACT 1: THE LUXURY ENTRANCE ==================== */}
         {viewMode === "hero" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center my-auto py-4">

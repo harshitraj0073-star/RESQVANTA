@@ -260,7 +260,7 @@ export function IncidentRadar({
 
         {/* View Mode Switcher */}
         <div
-          className={`p-1 rounded-full text-xs font-bold flex items-center gap-1 backdrop-blur-md ${
+          className={`p-1 rounded-2xl sm:rounded-full text-xs font-bold flex flex-wrap sm:flex-nowrap items-center gap-1 backdrop-blur-md ${
             isLight
               ? "bg-slate-200/70 text-slate-700"
               : "bg-slate-900/90 text-slate-300"

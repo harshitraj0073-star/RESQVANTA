@@ -228,10 +228,11 @@ export function TopNav({
         <a
           href="tel:112"
           aria-label="Call 112 National Emergency Services"
-          className="flex items-center space-x-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-sm transition transform active:scale-95"
+          className="flex items-center space-x-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3 sm:px-3.5 py-1.5 rounded-full shadow-sm transition transform active:scale-95 shrink-0"
         >
           <PhoneCall className="w-3.5 h-3.5" />
-          <span>{t.call112}</span>
+          <span className="hidden sm:inline">{t.call112}</span>
+          <span className="sm:hidden font-mono">112</span>
         </a>
       </div>
     </header>
