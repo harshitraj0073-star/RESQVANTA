@@ -9,24 +9,36 @@ import { SeverityLevel } from "@/types/triage";
 interface SceneCanvasProps {
   status: "IDLE" | "SCANNING" | SeverityLevel;
   viewMode: "hero" | "workspace" | "radar";
+  activeHotspot: string | null;
+  onSelectHotspot: (id: string | null) => void;
 }
 
-export default function SceneCanvas({ status, viewMode }: SceneCanvasProps) {
+export default function SceneCanvas({
+  status,
+  viewMode,
+  activeHotspot,
+  onSelectHotspot
+}: SceneCanvasProps) {
   return (
     <div className="w-full h-full relative">
       <Canvas
-        camera={{ position: [0, 0.3, 5.2], fov: 45 }}
+        camera={{ position: [0, 0.25, 5.1], fov: 44 }}
         dpr={[1, 1.5]}
         gl={{ antialias: true, powerPreference: "high-performance", alpha: true }}
         className="w-full h-full"
       >
         <Suspense fallback={null}>
-          <HolographicCore status={status} viewMode={viewMode} />
+          <HolographicCore
+            status={status}
+            viewMode={viewMode}
+            activeHotspot={activeHotspot}
+            onSelectHotspot={onSelectHotspot}
+          />
           <OrbitControls
             enableZoom={false}
             enablePan={false}
-            autoRotate={status === "IDLE"}
-            autoRotateSpeed={0.45}
+            autoRotate={status === "IDLE" && !activeHotspot}
+            autoRotateSpeed={0.4}
             dampingFactor={0.05}
           />
         </Suspense>

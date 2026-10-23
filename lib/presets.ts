@@ -1,6 +1,7 @@
 export interface PresetScenario {
   id: string;
   title: string;
+  subtitle: string;
   category: string;
   badgeColor: string;
   text: string;
@@ -9,23 +10,28 @@ export interface PresetScenario {
 export const PRESET_SCENARIOS: PresetScenario[] = [
   {
     id: "flood-electric",
-    title: "Flood + Sparking Meter",
+    title: "Scenario A: Flood & Electrical Danger",
+    subtitle: "Hinglish + Unconfirmed Entrapment",
     category: "Critical Hazard",
-    badgeColor: "text-red-400 border-red-500/30 bg-red-500/10",
-    text: "Water is entering our ground floor near Lohegaon main road after heavy rain, my grandfather cannot walk fast and the main electric meter box on the wall is sparking violently!"
+    badgeColor: "text-red-300 border-red-500/30 bg-red-500/10 hover:bg-red-500/20",
+    text: "Apartment ke basement mein paani bhar gaya hai aur electric meter se sparks aa rahe hain. Ek elderly person andar ho sakta hai."
   },
   {
     id: "highway-crash",
-    title: "Highway Crash (Hinglish)",
-    category: "Trauma / Traffic",
-    badgeColor: "text-amber-400 border-amber-500/30 bg-amber-500/10",
-    text: "Pune Nagar highway pe bada accident hua hai near Viman Nagar chowk, bike aur truck ki takkar hui hai, 2 log road pe gire hai bleeding ho rahi hai aur traffic jam lag gaya hai, samajh nahi aa raha kya karu!"
+    title: "Scenario B: Road Accident",
+    subtitle: "Unknown Injuries + Divider Trap",
+    category: "Road Incident",
+    badgeColor: "text-amber-300 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20",
+    text: "There has been a highway accident. One vehicle may be trapped near the divider. I have a photo but don't know whether anyone is injured."
   },
   {
     id: "coffee-spill",
-    title: "Non-Emergency Test",
-    category: "Guardrail Check",
-    badgeColor: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
-    text: "I spilled cold coffee on my laptop notebook on my study desk and there is a small stain on the paper."
+    title: "Scenario C: Coffee Spill (False Alarm)",
+    subtitle: "Tests Non-Emergency Guardrail",
+    category: "False-Alarm Check",
+    badgeColor: "text-emerald-300 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20",
+    text: "I spilled my coffee near my laptop. Nobody is hurt and there's no electrical fire."
   }
 ];
+
+export const DEMO_PRESETS = PRESET_SCENARIOS;

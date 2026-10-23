@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_INSTRUCTION, TRIAGE_RESPONSE_SCHEMA } from "@/lib/geminiSchema";
+import { validateTriageReport } from "@/lib/validation";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,7 +14,15 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { text, imageBase64, imageMimeType, gpsCoords, followUpContext, language } = body;
+    const {
+      text,
+      imageBase64,
+      imageMimeType,
+      gpsCoords,
+      manualLocation,
+      followUpContext,
+      language
+    } = body;
 
     if (!text && !imageBase64) {
       return NextResponse.json(
@@ -23,19 +32,20 @@ export async function POST(req: NextRequest) {
     }
 
     const ai = new GoogleGenAI({ apiKey });
-
-    // Prepare content parts for multimodal input
     const parts: any[] = [];
 
     let combinedPrompt = "";
     if (language && language !== "English") {
-      combinedPrompt += `[Target Output Language: ${language} - translate the immediate actions and summary appropriately]\n`;
+      combinedPrompt += `[Target Output Language: ${language} - translate summary, immediate actions, and rationale appropriately]\n`;
+    }
+    if (manualLocation) {
+      combinedPrompt += `[User-Entered Manual Location: ${manualLocation}]\n`;
     }
     if (gpsCoords) {
-      combinedPrompt += `[GPS Coordinates from Device Sensor: ${gpsCoords}]\n`;
+      combinedPrompt += `[Browser Location Shared by User: ${gpsCoords}]\n`;
     }
     if (followUpContext) {
-      combinedPrompt += `[User Added Follow-up Details for Missing Info Resolution: "${followUpContext}"]\n`;
+      combinedPrompt += `[USER-CONFIRMED CORRECTION / UPDATE: "${followUpContext}" — Treat this correction as authoritative user-confirmed information and update facts, risks, missing questions, and evidence_trace accordingly.]\n`;
     }
     if (text) {
       combinedPrompt += `[Raw User Incident Report]:\n${text}\n`;
@@ -44,7 +54,6 @@ export async function POST(req: NextRequest) {
     parts.push({ text: combinedPrompt });
 
     if (imageBase64) {
-      // Strip data url prefix if present
       const cleanBase64 = imageBase64.replace(/^data:image\/[a-zA-Z]+;base64,/, "");
       parts.push({
         inlineData: {
@@ -66,16 +75,19 @@ export async function POST(req: NextRequest) {
     });
 
     if (!response.text) {
-      throw new Error("No response generated from Gemini model.");
+      throw new Error("No response generated from Gemini 3.8 Flash.");
     }
 
     const parsedData = JSON.parse(response.text);
-    return NextResponse.json(parsedData);
+    const validatedReport = validateTriageReport(parsedData);
+    return NextResponse.json(validatedReport);
   } catch (error: any) {
     console.error("ResQvanta Triage API Error:", error);
     return NextResponse.json(
       {
-        error: error.message || "An unexpected error occurred during incident triage."
+        error:
+          error.message ||
+          "An unexpected error occurred during incident analysis. If this is an emergency, call 112 immediately."
       },
       { status: 500 }
     );

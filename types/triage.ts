@@ -1,22 +1,40 @@
-export type SeverityLevel = 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW' | 'NON_EMERGENCY';
+export type SeverityLevel =
+  | 'CRITICAL'
+  | 'HIGH'
+  | 'MODERATE'
+  | 'LOW'
+  | 'UNCERTAIN'
+  | 'NON_EMERGENCY';
+
+export interface EvidenceTraceItem {
+  claim: string;
+  source_type: 'USER_TEXT' | 'USER_IMAGE' | 'USER_CORRECTION' | 'AI_INFERENCE';
+  supporting_quote_or_observation: string;
+  verification_status: 'USER_REPORTED' | 'USER_CONFIRMED' | 'AI_INFERRED';
+  uncertainty_note?: string;
+}
 
 export interface TriageReport {
   is_valid_emergency: boolean;
   incident_title: string;
   incident_category: string;
   severity_level: SeverityLevel;
-  severity_score: number; // 1 to 10
-  confidence_score: number; // 0 to 100
+  urgency_rationale: string;
   executive_summary: string;
   location_status: {
     detected_location: string;
     is_location_precise: boolean;
+  };
+  people_affected: {
+    reported_summary: string;
+    uncertainty: string;
   };
   verification_matrix: {
     user_reported_facts: string[];
     ai_visual_or_context_inferences: string[];
     missing_critical_info: string[];
   };
+  evidence_trace: EvidenceTraceItem[];
   immediate_actions: {
     step_number: number;
     instruction: string;
