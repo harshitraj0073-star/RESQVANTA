@@ -257,11 +257,9 @@ export function HolographicCore({
       deltaFactor
     );
 
-    // 2. Tactical Group Centering in Radar Mode (Frames Earth inside left Radar Viewport on desktop)
+    // 2. Tactical Group Centering (Centered on camera axis for 100% true coordinate alignment)
     if (groupRef.current) {
-      const isDesktop =
-        typeof window !== "undefined" && window.innerWidth >= 1024;
-      const targetGroupPosX = viewMode === "radar" && isDesktop ? -1.1 : 0;
+      const targetGroupPosX = 0;
       groupRef.current.position.x = THREE.MathUtils.damp(
         groupRef.current.position.x,
         targetGroupPosX,
