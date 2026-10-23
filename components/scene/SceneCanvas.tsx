@@ -14,6 +14,7 @@ interface SceneCanvasProps {
   activeHotspot: string | null;
   onSelectHotspot: (id: string | null) => void;
   t: UIStrings;
+  gpsCoords?: string | null;
 }
 
 export default function SceneCanvas({
@@ -23,6 +24,7 @@ export default function SceneCanvas({
   activeHotspot,
   onSelectHotspot,
   t,
+  gpsCoords,
 }: SceneCanvasProps) {
   return (
     <div className="w-full h-full relative">
@@ -40,12 +42,12 @@ export default function SceneCanvas({
             activeHotspot={activeHotspot}
             onSelectHotspot={onSelectHotspot}
             t={t}
+            gpsCoords={gpsCoords}
           />
           <OrbitControls
             enableZoom={false}
             enablePan={false}
-            autoRotate={status === "IDLE" && !activeHotspot}
-            autoRotateSpeed={0.35}
+            autoRotate={false}
             dampingFactor={0.05}
           />
         </Suspense>

@@ -19,6 +19,21 @@ export function latLonToVector3(
 }
 
 /**
+ * Calculate the Euler rotation [rotX, rotY, rotZ] to center a given (lat, lon)
+ * on the 3D globe facing directly towards the camera (+Z)
+ */
+export function latLonToTargetRotation(
+  lat: number,
+  lon: number
+): [number, number, number] {
+  // Latitude tilts around the X-axis
+  const rotX = (lat * Math.PI) / 180;
+  // Longitude rotates around the Y-axis (offset by -90 deg for prime meridian orientation)
+  const rotY = -(lon * Math.PI) / 180 - Math.PI / 2;
+  return [rotX, rotY, 0];
+}
+
+/**
  * Key global emergency intelligence & dispatch hubs (with Indian hubs highlighted)
  */
 export interface GlobalHub {

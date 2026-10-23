@@ -313,6 +313,7 @@ export default function ResQvantaApp() {
             activeHotspot={activeHotspot}
             onSelectHotspot={setActiveHotspot}
             t={t}
+            gpsCoords={gpsCoords}
           />
         </div>
       )}

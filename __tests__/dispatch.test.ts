@@ -5,6 +5,7 @@ import {
   GLOBAL_EMERGENCY_HUBS,
   EMERGENCY_ARC_PAIRS,
   CONTINENT_POLYGONS,
+  latLonToTargetRotation,
 } from '../lib/earthContinents';
 
 test('112 Emergency Dispatch Packet length fits within single SMS boundary', () => {
@@ -42,4 +43,9 @@ test('3D Earth Globe latLonToVector3 maps geographic coordinates accurately to s
   assert.ok(GLOBAL_EMERGENCY_HUBS.length >= 10, 'Includes major Indian and international emergency hubs');
   assert.ok(EMERGENCY_ARC_PAIRS.length >= 10, 'Includes 3D signal arc pairs');
   assert.ok(CONTINENT_POLYGONS.length >= 8, 'Includes major world continent outlines');
+
+  const [rotX, rotY, rotZ] = latLonToTargetRotation(18.5204, 73.8567);
+  assert.strictEqual(rotZ, 0, 'Target rotation around Z must be 0');
+  assert.ok(Math.abs(rotX - (18.5204 * Math.PI) / 180) < 0.001, 'RotX matches target latitude in radians');
+  assert.ok(Math.abs(rotY - (-(73.8567 * Math.PI) / 180 - Math.PI / 2)) < 0.001, 'RotY matches target longitude');
 });

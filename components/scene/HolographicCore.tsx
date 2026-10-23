@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useMemo } from "react";
+import React, { useRef, useMemo, useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Html, ContactShadows, Line } from "@react-three/drei";
 import * as THREE from "three";
@@ -9,6 +9,7 @@ import { UIStrings } from "@/lib/translations";
 import {
   createStylizedEarthTexture,
   latLonToVector3,
+  latLonToTargetRotation,
   GLOBAL_EMERGENCY_HUBS,
   EMERGENCY_ARC_PAIRS,
 } from "@/lib/earthContinents";
@@ -56,6 +57,7 @@ interface HolographicCoreProps {
   activeHotspot: string | null;
   onSelectHotspot: (id: string | null) => void;
   t: UIStrings;
+  gpsCoords?: string | null;
 }
 
 const EARTH_RADIUS = 1.52;
@@ -67,16 +69,41 @@ export function HolographicCore({
   activeHotspot,
   onSelectHotspot,
   t,
+  gpsCoords,
 }: HolographicCoreProps) {
   const groupRef = useRef<THREE.Group>(null!);
   const earthRotationGroupRef = useRef<THREE.Group>(null!);
   const atmosphereRef = useRef<THREE.Mesh>(null!);
+  const orbitalGroupRef = useRef<THREE.Group>(null!);
   const ring1Ref = useRef<THREE.Mesh>(null!);
   const ring2Ref = useRef<THREE.Mesh>(null!);
   const signalPulsesRef = useRef<THREE.Group>(null!);
+  const radarRippleGroupRef = useRef<THREE.Group>(null!);
+  const particlesRef = useRef<THREE.Points>(null!);
+
+  // Inertial pointer state ref (zero React re-renders on cursor movement)
+  const pointerRef = useRef({ x: 0, y: 0, targetX: 0, targetY: 0 });
+  const baseAmbientRotY = useRef(-2.05);
+  const currentTiltX = useRef(0.14);
+  const currentTiltY = useRef(0);
 
   const { camera } = useThree();
   const isLight = theme === "light";
+
+  // Passive pointer tracking across entire browser window
+  useEffect(() => {
+    const handlePointerMove = (e: PointerEvent) => {
+      const x = (e.clientX / window.innerWidth) * 2 - 1;
+      const y = -(e.clientY / window.innerHeight) * 2 + 1;
+      pointerRef.current.targetX = x;
+      pointerRef.current.targetY = y;
+    };
+
+    window.addEventListener("pointermove", handlePointerMove, {
+      passive: true,
+    });
+    return () => window.removeEventListener("pointermove", handlePointerMove);
+  }, []);
 
   // Theme-aware and status-aware accent color
   const themeColor = useMemo(() => {
@@ -99,9 +126,9 @@ export function HolographicCore({
     }
   }, [status, isLight]);
 
-  // Strong centerpiece in Showroom; faded, low-noise ambient Earth in Workspace & Radar
+  // View-mode aware opacity
   const sceneOpacityMultiplier =
-    viewMode === "hero" ? 1.0 : viewMode === "workspace" ? 0.28 : 0.22;
+    viewMode === "hero" ? 1.0 : viewMode === "workspace" ? 0.28 : 0.85;
 
   // Stylized procedural Earth texture with continents, coastlines, graticules & dot matrix
   const earthTexture = useMemo(() => {
@@ -141,9 +168,39 @@ export function HolographicCore({
     return { hubVectors: vectors, arcCurves: curves };
   }, []);
 
+  // Parse target GPS coordinates for Radar zoom & orientation
+  const parsedCoords = useMemo(() => {
+    if (!gpsCoords) {
+      return { lat: 18.5204, lon: 73.8567, isDefault: true };
+    }
+    const parts = gpsCoords.split(",").map((s) => parseFloat(s.trim()));
+    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+      return { lat: parts[0], lon: parts[1], isDefault: false };
+    }
+    return { lat: 18.5204, lon: 73.8567, isDefault: true };
+  }, [gpsCoords]);
+
+  // Target Euler rotation to bring target coordinates directly facing the camera
+  const targetRadarRot = useMemo(() => {
+    return latLonToTargetRotation(parsedCoords.lat, parsedCoords.lon);
+  }, [parsedCoords]);
+
+  // 3D vector and surface orientation on the sphere surface for the epicenter beacon
+  const { epicenterVector, epicenterQuaternion } = useMemo(() => {
+    const pos = latLonToVector3(
+      parsedCoords.lat,
+      parsedCoords.lon,
+      EARTH_RADIUS + 0.018
+    );
+    const normal = pos.clone().normalize();
+    const q = new THREE.Quaternion();
+    q.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+    return { epicenterVector: pos, epicenterQuaternion: q };
+  }, [parsedCoords]);
+
   // Subtle orbital atmosphere dust particles
   const orbitalParticles = useMemo(() => {
-    const count = 420;
+    const count = 380;
     const positions = new Float32Array(count * 3);
     const phi = Math.PI * (3 - Math.sqrt(5));
 
@@ -160,31 +217,139 @@ export function HolographicCore({
     return positions;
   }, []);
 
-  // Camera choreography across views
+  // Camera choreography across views (Cinematic close-up zoom in Radar mode!)
   const targetCameraPos = useMemo(() => {
     if (viewMode === "hero" && activeHotspot) {
       const found = CORE_HOTSPOTS.find((h) => h.id === activeHotspot);
       if (found) return new THREE.Vector3(...found.cameraTarget);
     }
     if (viewMode === "hero") return new THREE.Vector3(0, 0.18, 5.05);
-    if (viewMode === "radar") return new THREE.Vector3(0, 1.8, 6.2);
+    if (viewMode === "radar") return new THREE.Vector3(0, 0, 2.72); // Close planetary tactical zoom!
     return new THREE.Vector3(1.85, 0.1, 6.3);
   }, [viewMode, activeHotspot]);
 
   useFrame((state, delta) => {
+    const deltaFactor = Math.min(delta, 0.1);
     const speedMultiplier =
       status === "SCANNING" ? 2.1 : status === "CRITICAL" ? 1.35 : 0.55;
 
-    camera.position.lerp(targetCameraPos, delta * 2.2);
+    // 1. Inertial Damped Mouse Interpolation
+    pointerRef.current.x = THREE.MathUtils.damp(
+      pointerRef.current.x,
+      pointerRef.current.targetX,
+      4.5,
+      deltaFactor
+    );
+    pointerRef.current.y = THREE.MathUtils.damp(
+      pointerRef.current.y,
+      pointerRef.current.targetY,
+      4.5,
+      deltaFactor
+    );
+
+    // 2. Camera Dolly Zoom
+    const cameraLerpSpeed = viewMode === "radar" ? 2.8 : 2.2;
+    camera.position.lerp(targetCameraPos, deltaFactor * cameraLerpSpeed);
     camera.lookAt(0, 0, 0);
 
-    // Smoothly rotate the Earth globe + locked continents/arcs
+    // Respect reduced-motion
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const parallaxWeight = prefersReducedMotion
+      ? 0
+      : viewMode === "hero"
+      ? 1.0
+      : viewMode === "workspace"
+      ? 0.35
+      : 0.12;
+
+    // 3. Earth Rotation & Orientation Transition
     if (earthRotationGroupRef.current) {
-      earthRotationGroupRef.current.rotation.y +=
-        delta * 0.11 * speedMultiplier;
+      if (viewMode === "radar") {
+        // Smoothly orient Earth towards target GPS coordinates
+        earthRotationGroupRef.current.rotation.x = THREE.MathUtils.damp(
+          earthRotationGroupRef.current.rotation.x,
+          targetRadarRot[0],
+          3.5,
+          deltaFactor
+        );
+        earthRotationGroupRef.current.rotation.y = THREE.MathUtils.damp(
+          earthRotationGroupRef.current.rotation.y,
+          targetRadarRot[1],
+          3.5,
+          deltaFactor
+        );
+        earthRotationGroupRef.current.rotation.z = THREE.MathUtils.damp(
+          earthRotationGroupRef.current.rotation.z,
+          0,
+          3.5,
+          deltaFactor
+        );
+      } else {
+        // Hero & Workspace: Ambient slow spin + smooth mouse parallax tilt
+        baseAmbientRotY.current += deltaFactor * 0.11 * speedMultiplier;
+
+        const targetTiltX = -pointerRef.current.y * 0.14 * parallaxWeight;
+        const targetTiltY = pointerRef.current.x * 0.2 * parallaxWeight;
+
+        currentTiltX.current = THREE.MathUtils.damp(
+          currentTiltX.current,
+          targetTiltX + 0.14,
+          4.0,
+          deltaFactor
+        );
+        currentTiltY.current = THREE.MathUtils.damp(
+          currentTiltY.current,
+          targetTiltY,
+          4.0,
+          deltaFactor
+        );
+
+        earthRotationGroupRef.current.rotation.x = currentTiltX.current;
+        earthRotationGroupRef.current.rotation.y =
+          baseAmbientRotY.current + currentTiltY.current;
+        earthRotationGroupRef.current.rotation.z = -0.06;
+      }
     }
 
-    // Animate traveling emergency signal pulses along the 3D arcs
+    // 4. Multi-Layer Parallax: Atmosphere Specular Shift & Pulse
+    if (atmosphereRef.current) {
+      atmosphereRef.current.position.x =
+        -pointerRef.current.x * 0.05 * parallaxWeight;
+      atmosphereRef.current.position.y =
+        -pointerRef.current.y * 0.05 * parallaxWeight;
+      const pulse =
+        status === "SCANNING"
+          ? 1 + Math.sin(state.clock.elapsedTime * 5) * 0.03
+          : 1 + Math.sin(state.clock.elapsedTime * 1.8) * 0.012;
+      atmosphereRef.current.scale.set(pulse, pulse, pulse);
+    }
+
+    // 5. Multi-Layer Parallax: Orbital Telemetry Rings
+    if (orbitalGroupRef.current) {
+      orbitalGroupRef.current.position.x =
+        pointerRef.current.x * 0.08 * parallaxWeight;
+      orbitalGroupRef.current.position.y =
+        pointerRef.current.y * 0.06 * parallaxWeight;
+    }
+
+    if (ring1Ref.current) {
+      ring1Ref.current.rotation.z += deltaFactor * 0.08 * speedMultiplier;
+    }
+    if (ring2Ref.current) {
+      ring2Ref.current.rotation.y -= deltaFactor * 0.06 * speedMultiplier;
+    }
+
+    // 6. Orbital Dust Drift
+    if (particlesRef.current) {
+      particlesRef.current.rotation.y += deltaFactor * 0.02;
+      particlesRef.current.position.x =
+        -pointerRef.current.x * 0.03 * parallaxWeight;
+    }
+
+    // 7. Animate Traveling Emergency Signal Pulses along Arcs
     if (signalPulsesRef.current) {
       const tNow = state.clock.elapsedTime;
       signalPulsesRef.current.children.forEach((child, idx) => {
@@ -196,19 +361,19 @@ export function HolographicCore({
       });
     }
 
-    if (ring1Ref.current) {
-      ring1Ref.current.rotation.z += delta * 0.08 * speedMultiplier;
-    }
-    if (ring2Ref.current) {
-      ring2Ref.current.rotation.y -= delta * 0.06 * speedMultiplier;
-    }
-
-    if (atmosphereRef.current) {
-      const pulse =
-        status === "SCANNING"
-          ? 1 + Math.sin(state.clock.elapsedTime * 5) * 0.03
-          : 1 + Math.sin(state.clock.elapsedTime * 1.8) * 0.012;
-      atmosphereRef.current.scale.set(pulse, pulse, pulse);
+    // 8. Animate Concentric Expanding Radar Waves at Epicenter (Radar View)
+    if (radarRippleGroupRef.current) {
+      const tNow = state.clock.elapsedTime;
+      radarRippleGroupRef.current.children.forEach((child, idx) => {
+        const progress = (tNow * 0.8 + idx * 0.33) % 1;
+        const scale = 0.08 + progress * 0.55;
+        child.scale.set(scale, scale, 1);
+        const mesh = child as THREE.Mesh;
+        if (mesh.material) {
+          (mesh.material as THREE.MeshBasicMaterial).opacity =
+            (1 - progress) * 0.85;
+        }
+      });
     }
   });
 
@@ -242,13 +407,9 @@ export function HolographicCore({
         color={isLight ? "#0f172a" : themeColor}
       />
 
-      {/* ==================== ROTATING 3D EARTH GLOBE GROUP ==================== */}
-      {/* Initial Y rotation (-2.05 rad) centers India & Asia-Europe-Africa toward camera */}
-      <group
-        ref={earthRotationGroupRef}
-        rotation={[0.14, -2.05, -0.06]}
-      >
-        {/* 1. Stylized Earth Sphere with Continents, Graticules & Coastlines */}
+      {/* ==================== 1. PERSISTENT 3D ROTATING EARTH GLOBE ==================== */}
+      <group ref={earthRotationGroupRef} rotation={[0.14, -2.05, -0.06]}>
+        {/* Stylized Earth Sphere with Continents, Graticules & Coastlines */}
         <mesh>
           <sphereGeometry args={[EARTH_RADIUS, 64, 64]} />
           <meshPhysicalMaterial
@@ -270,6 +431,10 @@ export function HolographicCore({
                 ? isLight
                   ? 0.95
                   : 0.94
+                : viewMode === "radar"
+                ? isLight
+                  ? 0.88
+                  : 0.92
                 : isLight
                 ? 0.34
                 : 0.3
@@ -277,7 +442,7 @@ export function HolographicCore({
           />
         </mesh>
 
-        {/* 2. Subtle Latitude/Longitude Geodesic Overlay Shell */}
+        {/* Latitude/Longitude Geodesic Overlay Shell */}
         <mesh>
           <sphereGeometry args={[EARTH_RADIUS + 0.006, 24, 18]} />
           <meshBasicMaterial
@@ -288,7 +453,7 @@ export function HolographicCore({
           />
         </mesh>
 
-        {/* 3. Global Emergency Hub Beacons on Continents */}
+        {/* Global Emergency Hub Beacons on Continents */}
         {hubVectors.map((hub) => (
           <mesh key={hub.name} position={hub.pos}>
             <sphereGeometry args={[hub.isPrimary ? 0.032 : 0.02, 12, 12]} />
@@ -306,7 +471,7 @@ export function HolographicCore({
           </mesh>
         ))}
 
-        {/* 4. Elegant 3D Emergency Signal Arcs Connecting Continents */}
+        {/* Elegant 3D Emergency Signal Arcs Connecting Continents */}
         {arcCurves.map((arc) => (
           <Line
             key={arc.id}
@@ -320,13 +485,11 @@ export function HolographicCore({
             }
             lineWidth={arc.isPrimary ? 1.6 : 1.1}
             transparent
-            opacity={
-              (arc.isPrimary ? 0.62 : 0.36) * sceneOpacityMultiplier
-            }
+            opacity={(arc.isPrimary ? 0.62 : 0.36) * sceneOpacityMultiplier}
           />
         ))}
 
-        {/* 5. Animated Signal Pulses Traveling Along Emergency Arcs */}
+        {/* Animated Signal Pulses Traveling Along Emergency Arcs */}
         <group ref={signalPulsesRef}>
           {arcCurves.map((arc) => (
             <mesh key={`pulse-${arc.id}`}>
@@ -339,10 +502,71 @@ export function HolographicCore({
             </mesh>
           ))}
         </group>
+
+        {/* ==================== 3D TACTICAL EPICENTER & RADAR RIPPLES ==================== */}
+        {viewMode === "radar" && (
+          <group position={epicenterVector} quaternion={epicenterQuaternion}>
+            {/* Glowing Tactical Epicenter Marker */}
+            <mesh position={[0, 0, 0.03]}>
+              <sphereGeometry args={[0.045, 16, 16]} />
+              <meshBasicMaterial
+                color={isLight ? "#dc2626" : "#f59e0b"}
+                transparent
+                opacity={0.95}
+              />
+            </mesh>
+
+            <mesh position={[0, 0, 0.08]}>
+              <cylinderGeometry args={[0.006, 0.006, 0.14, 8]} />
+              <meshBasicMaterial
+                color={isLight ? "#0891b2" : "#22d3ee"}
+                transparent
+                opacity={0.85}
+              />
+            </mesh>
+
+            {/* Concentric Expanding Radar Pulse Waves on the Globe Surface */}
+            <group ref={radarRippleGroupRef}>
+              {[0, 1, 2].map((ringIdx) => (
+                <mesh key={`radar-ripple-${ringIdx}`} position={[0, 0, 0.01]}>
+                  <ringGeometry args={[0.9, 1.0, 32]} />
+                  <meshBasicMaterial
+                    color={isLight ? "#0891b2" : "#38bdf8"}
+                    side={THREE.DoubleSide}
+                    transparent
+                    opacity={0.7}
+                  />
+                </mesh>
+              ))}
+            </group>
+
+            {/* 3D Floating Epicenter Telemetry Tag */}
+            <Html
+              position={[0, 0.12, 0.05]}
+              center
+              distanceFactor={6}
+              zIndexRange={[30, 0]}
+              style={{ pointerEvents: "none" }}
+            >
+              <div
+                className={`px-3 py-1.5 rounded-xl backdrop-blur-md text-[10px] font-mono font-bold whitespace-nowrap shadow-lg flex items-center gap-2 border ${
+                  isLight
+                    ? "bg-white/95 text-slate-900 border-cyan-500/40 shadow-cyan-900/10"
+                    : "bg-slate-950/95 text-cyan-300 border-cyan-400/40 shadow-cyan-500/20"
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                <span>
+                  RADAR LOCKED: {parsedCoords.lat.toFixed(3)}°N,{" "}
+                  {parsedCoords.lon.toFixed(3)}°E
+                </span>
+              </div>
+            </Html>
+          </group>
+        )}
       </group>
 
-      {/* ==================== ATMOSPHERIC RIM GLOW & ORBITAL TELEMETRY ==================== */}
-      {/* 6. Subtle Glowing Atmosphere Halo */}
+      {/* ==================== 2. ATMOSPHERIC RIM GLOW ==================== */}
       <mesh ref={atmosphereRef}>
         <sphereGeometry args={[EARTH_RADIUS * 1.11, 48, 48]} />
         <meshBasicMaterial
@@ -353,27 +577,29 @@ export function HolographicCore({
         />
       </mesh>
 
-      {/* 7. Fine Orbital Telemetry Rings */}
-      <mesh ref={ring1Ref} rotation={[Math.PI / 2.3, 0.2, 0]}>
-        <torusGeometry args={[EARTH_RADIUS + 0.52, 0.007, 16, 120]} />
-        <meshBasicMaterial
-          color={themeColor}
-          transparent
-          opacity={(isLight ? 0.28 : 0.32) * sceneOpacityMultiplier}
-        />
-      </mesh>
+      {/* ==================== 3. MULTI-LAYER ORBITAL TELEMETRY RINGS ==================== */}
+      <group ref={orbitalGroupRef}>
+        <mesh ref={ring1Ref} rotation={[Math.PI / 2.3, 0.2, 0]}>
+          <torusGeometry args={[EARTH_RADIUS + 0.52, 0.007, 16, 120]} />
+          <meshBasicMaterial
+            color={themeColor}
+            transparent
+            opacity={(isLight ? 0.28 : 0.32) * sceneOpacityMultiplier}
+          />
+        </mesh>
 
-      <mesh ref={ring2Ref} rotation={[Math.PI / 3.1, -0.35, 0]}>
-        <torusGeometry args={[EARTH_RADIUS + 0.82, 0.005, 16, 120]} />
-        <meshBasicMaterial
-          color={isLight ? "#64748b" : "#f59e0b"}
-          transparent
-          opacity={(isLight ? 0.18 : 0.22) * sceneOpacityMultiplier}
-        />
-      </mesh>
+        <mesh ref={ring2Ref} rotation={[Math.PI / 3.1, -0.35, 0]}>
+          <torusGeometry args={[EARTH_RADIUS + 0.82, 0.005, 16, 120]} />
+          <meshBasicMaterial
+            color={isLight ? "#64748b" : "#f59e0b"}
+            transparent
+            opacity={(isLight ? 0.18 : 0.22) * sceneOpacityMultiplier}
+          />
+        </mesh>
+      </group>
 
-      {/* 8. Low-Noise Orbital Data Nodes */}
-      <points>
+      {/* ==================== 4. ORBITAL DUST PARTICLES ==================== */}
+      <points ref={particlesRef}>
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
@@ -388,7 +614,7 @@ export function HolographicCore({
         />
       </points>
 
-      {/* 9. Three Interactive 3D Hotspot Spatial Anchors (Mounted ONLY in hero mode) */}
+      {/* ==================== 5. INTERACTIVE 3D HOTSPOTS (HERO MODE ONLY) ==================== */}
       {viewMode === "hero" && (
         <group>
           {CORE_HOTSPOTS.map((spot) => {
