@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ShieldAlert, Activity, PhoneCall, Eye, Layers } from "lucide-react";
+import { ShieldAlert, Activity, PhoneCall, Eye, Layers, Compass, Radio } from "lucide-react";
 
 interface TopNavProps {
   is3DMode: boolean;
@@ -9,6 +9,8 @@ interface TopNavProps {
   language: string;
   onLanguageChange: (lang: string) => void;
   gpsActive: boolean;
+  viewMode: "hero" | "workspace" | "radar";
+  onViewModeChange: (mode: "hero" | "workspace" | "radar") => void;
 }
 
 export function TopNav({
@@ -17,12 +19,17 @@ export function TopNav({
   language,
   onLanguageChange,
   gpsActive,
+  viewMode,
+  onViewModeChange,
 }: TopNavProps) {
   return (
-    <header className="h-16 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl px-4 md:px-8 flex items-center justify-between sticky top-0 z-50">
+    <header className="h-16 border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-xl px-4 md:px-8 flex items-center justify-between sticky top-0 z-50">
       {/* Brand */}
-      <div className="flex items-center space-x-3">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 border border-cyan-400/40">
+      <div
+        onClick={() => onViewModeChange("hero")}
+        className="flex items-center space-x-3 cursor-pointer group"
+      >
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 border border-cyan-400/40 group-hover:scale-105 transition">
           <ShieldAlert className="w-5 h-5 text-white" />
         </div>
         <div>
@@ -30,33 +37,70 @@ export function TopNav({
             <span className="font-extrabold tracking-tight text-white text-base">
               ResQvanta <span className="text-cyan-400 text-xs font-mono font-normal">AI</span>
             </span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hidden sm:flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
               GEMINI 2.5 FLASH
             </span>
           </div>
-          <p className="text-[10px] text-slate-400 hidden sm:block">From Human Panic to Verified Action</p>
+          <p className="text-[10px] text-slate-400 hidden md:block">From Human Panic to Verified Action</p>
         </div>
       </div>
 
+      {/* Center View Mode Switcher (Hero / Tactical Workspace / 112 Radar) */}
+      <div className="hidden lg:flex items-center bg-slate-900/90 border border-slate-800 p-1 rounded-xl space-x-1">
+        <button
+          onClick={() => onViewModeChange("hero")}
+          className={`px-3 py-1 rounded-lg text-xs font-medium transition cursor-pointer ${
+            viewMode === "hero"
+              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+              : "text-slate-400 hover:text-white"
+          }`}
+        >
+          🌐 3D Overview
+        </button>
+        <button
+          onClick={() => onViewModeChange("workspace")}
+          className={`px-3 py-1 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+            viewMode === "workspace"
+              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+              : "text-slate-400 hover:text-white"
+          }`}
+        >
+          <Compass className="w-3.5 h-3.5" />
+          <span>Incident Workspace</span>
+        </button>
+        <button
+          onClick={() => onViewModeChange("radar")}
+          className={`px-3 py-1 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+            viewMode === "radar"
+              ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
+              : "text-slate-400 hover:text-white"
+          }`}
+        >
+          <Radio className="w-3.5 h-3.5" />
+          <span>112 Dispatch Radar</span>
+        </button>
+      </div>
+
       {/* Action Badges & Toggles */}
-      <div className="flex items-center space-x-2 md:space-x-3">
+      <div className="flex items-center space-x-2 md:space-x-2.5">
         {/* GPS Indicator */}
         <div
-          className={`hidden sm:flex items-center space-x-1.5 text-[11px] font-mono px-2.5 py-1 rounded-lg border transition ${
+          className={`hidden xl:flex items-center space-x-1.5 text-[11px] font-mono px-2.5 py-1 rounded-lg border transition ${
             gpsActive
               ? "bg-cyan-500/10 text-cyan-300 border-cyan-500/30"
               : "bg-slate-900 text-slate-400 border-slate-800"
           }`}
         >
           <Activity className="w-3.5 h-3.5" />
-          <span>{gpsActive ? "GPS LOCKED" : "GPS READY"}</span>
+          <span>{gpsActive ? "GPS LOCKED" : "GPS STANDBY"}</span>
         </div>
 
         {/* Language Selector */}
         <select
           value={language}
           onChange={(e) => onLanguageChange(e.target.value)}
+          aria-label="Select Output Language"
           className="bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-slate-300 px-2.5 py-1.5 focus:outline-none focus:border-cyan-500 transition cursor-pointer"
         >
           <option value="English">English</option>
