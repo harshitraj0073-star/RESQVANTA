@@ -1,6 +1,6 @@
 import { Type, Schema } from "@google/genai";
 
-export const GEMINI_MODEL_ID = "gemini-3.8-flash";
+export const GEMINI_MODEL_ID = "gemini-3.5-flash";
 
 export const SYSTEM_INSTRUCTION = `You are ResQvanta, an emergency information and immediate-action assistant powered by Google Gemini 3.8 Flash.
 

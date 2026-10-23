@@ -280,56 +280,62 @@ export function HolographicCore({
         />
       </mesh>
 
-      {/* 5. Three Interactive 3D Hotspot Spatial Anchors (Always Mounted, CSS-hidden when not hero to prevent React unmount root error) */}
-      <group visible={viewMode === "hero"}>
-        {CORE_HOTSPOTS.map((spot) => {
-          const isSelected = activeHotspot === spot.id;
-          const title = t.hotspots[spot.titleKey];
-          return (
-            <Html
-              key={spot.id}
-              position={spot.position}
-              center
-              distanceFactor={8}
-              zIndexRange={[20, 0]}
-            >
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSelectHotspot(isSelected ? null : spot.id);
+      {/* 5. Three Interactive 3D Hotspot Spatial Anchors (Mounted ONLY in hero mode to prevent DOM bleeding and React unmount error) */}
+      {viewMode === "hero" && (
+        <group>
+          {CORE_HOTSPOTS.map((spot) => {
+            const isSelected = activeHotspot === spot.id;
+            const title = t.hotspots[spot.titleKey];
+            return (
+              <Html
+                key={spot.id}
+                position={spot.position}
+                center
+                distanceFactor={8}
+                zIndexRange={[20, 0]}
+                style={{
+                  display: viewMode === "hero" ? "block" : "none",
+                  pointerEvents: viewMode === "hero" ? "auto" : "none",
                 }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    onSelectHotspot(isSelected ? null : spot.id);
-                  }
-                }}
-                aria-expanded={isSelected}
-                aria-label={title}
-                className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md transition-all duration-300 cursor-pointer whitespace-nowrap shadow-sm ${
-                  isSelected
-                    ? "bg-cyan-600 text-white font-semibold scale-105"
-                    : isLight
-                    ? "bg-white/85 text-slate-900 hover:bg-white shadow-slate-300/60"
-                    : "bg-slate-900/80 text-slate-100 hover:bg-slate-900"
-                }`}
               >
-                <span
-                  className={`w-5 h-5 rounded-full text-[10px] font-mono flex items-center justify-center font-bold ${
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectHotspot(isSelected ? null : spot.id);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onSelectHotspot(isSelected ? null : spot.id);
+                    }
+                  }}
+                  aria-expanded={isSelected}
+                  aria-label={title}
+                  className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md transition-all duration-300 cursor-pointer whitespace-nowrap shadow-sm ${
                     isSelected
-                      ? "bg-white text-cyan-700"
-                      : "bg-cyan-500/20 text-cyan-600 dark:text-cyan-300"
+                      ? "bg-cyan-600 text-white font-semibold scale-105"
+                      : isLight
+                      ? "bg-white/85 text-slate-900 hover:bg-white shadow-slate-300/60"
+                      : "bg-slate-900/80 text-slate-100 hover:bg-slate-900"
                   }`}
                 >
-                  {spot.label}
-                </span>
-                <span className="text-xs tracking-tight">{title}</span>
-              </button>
-            </Html>
-          );
-        })}
-      </group>
+                  <span
+                    className={`w-5 h-5 rounded-full text-[10px] font-mono flex items-center justify-center font-bold ${
+                      isSelected
+                        ? "bg-white text-cyan-700"
+                        : "bg-cyan-500/20 text-cyan-600 dark:text-cyan-300"
+                    }`}
+                  >
+                    {spot.label}
+                  </span>
+                  <span className="text-xs tracking-tight">{title}</span>
+                </button>
+              </Html>
+            );
+          })}
+        </group>
+      )}
     </group>
   );
 }
