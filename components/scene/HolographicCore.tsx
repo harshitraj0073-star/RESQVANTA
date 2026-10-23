@@ -280,9 +280,9 @@ export function HolographicCore({
         />
       </mesh>
 
-      {/* 5. Three Interactive 3D Hotspots (Desktop Hero Mode, Clipped-Safe) */}
-      {viewMode === "hero" &&
-        CORE_HOTSPOTS.map((spot) => {
+      {/* 5. Three Interactive 3D Hotspot Spatial Anchors (Always Mounted, CSS-hidden when not hero to prevent React unmount root error) */}
+      <group visible={viewMode === "hero"}>
+        {CORE_HOTSPOTS.map((spot) => {
           const isSelected = activeHotspot === spot.id;
           const title = t.hotspots[spot.titleKey];
           return (
@@ -329,6 +329,7 @@ export function HolographicCore({
             </Html>
           );
         })}
+      </group>
     </group>
   );
 }
