@@ -4,6 +4,7 @@ export interface PresetScenario {
   id: string;
   accentColor: string;
   text: string;
+  defaultLocation?: string;
   localized: Record<
     SupportedLanguage,
     {
@@ -19,6 +20,7 @@ export const PRESET_SCENARIOS: PresetScenario[] = [
     id: "flood-electric",
     accentColor: "text-red-600 dark:text-red-400",
     text: "Basement mein paani bhar gaya hai aur meter se sparks aa rahe hain. Ek elderly person andar ho sakta hai.",
+    defaultLocation: "Pune Sector — Lower Ground Floor Basement",
     localized: {
       "en-IN": {
         title: "Scenario A: Flood & Electrical Danger",
@@ -46,6 +48,7 @@ export const PRESET_SCENARIOS: PresetScenario[] = [
     id: "highway-crash",
     accentColor: "text-amber-600 dark:text-amber-400",
     text: "A truck and car collided near the highway divider. Someone may be trapped, but I cannot see inside the vehicle.",
+    defaultLocation: "Mumbai-Pune Expressway (KM 42 Divider)",
     localized: {
       "en-IN": {
         title: "Scenario B: Highway Accident",
@@ -73,6 +76,7 @@ export const PRESET_SCENARIOS: PresetScenario[] = [
     id: "coffee-spill",
     accentColor: "text-emerald-600 dark:text-emerald-400",
     text: "I accidentally spilled coffee on my desk. Nobody is hurt and there is no fire.",
+    defaultLocation: "Tech Park Workstation (Non-Emergency)",
     localized: {
       "en-IN": {
         title: "Scenario C: Coffee Spill (False Alarm)",

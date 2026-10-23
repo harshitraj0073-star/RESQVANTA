@@ -106,6 +106,9 @@ export function InputConsole({
 
   const handleSelectPreset = (p: PresetScenario) => {
     onInputTextChange(p.text);
+    if (p.defaultLocation) {
+      onManualLocationChange(p.defaultLocation);
+    }
     setErrorMessage(null);
   };
 

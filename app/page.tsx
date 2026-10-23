@@ -386,15 +386,18 @@ export default function ResQvantaApp() {
                 <button
                   type="button"
                   onClick={() => {
-                    const demoText = PRESET_SCENARIOS[0].text;
+                    const demoPreset = PRESET_SCENARIOS[0];
+                    const demoText = demoPreset.text;
+                    const demoLocation =
+                      demoPreset.defaultLocation || "Pune Sector — Lower Ground Floor Basement";
                     setInputText(demoText);
-                    setManualLocation("Fictional Demo Scenario A");
+                    setManualLocation(demoLocation);
                     handleAnalyze({
                       text: demoText,
                       imageBase64: null,
                       imageMimeType: null,
                       gpsCoords: null,
-                      manualLocation: "Fictional Demo Scenario A",
+                      manualLocation: demoLocation,
                     });
                   }}
                   className="px-6 py-3.5 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs tracking-wide uppercase shadow-md transition transform active:scale-95 cursor-pointer flex items-center gap-2"
@@ -748,7 +751,75 @@ export default function ResQvantaApp() {
         )}
       </main>
 
-      {/* 4. Minimal Footer */}
+      {/* 4. Mobile Floating Navigation Dock (< lg screens) */}
+      <nav
+        aria-label="Mobile Navigation Dock"
+        className="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 pointer-events-auto flex items-center gap-1.5 p-1.5 rounded-full backdrop-blur-xl shadow-lg border transition-all"
+        style={{
+          backgroundColor: isLight
+            ? "rgba(255, 255, 255, 0.9)"
+            : "rgba(4, 7, 15, 0.9)",
+          borderColor: isLight
+            ? "rgba(203, 213, 225, 0.85)"
+            : "rgba(30, 41, 59, 0.85)",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setViewMode("hero")}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+            viewMode === "hero"
+              ? isLight
+                ? "bg-slate-900 text-white shadow-xs"
+                : "bg-cyan-500/25 text-white ring-1 ring-cyan-400/50"
+              : isLight
+              ? "text-slate-600 hover:text-slate-950"
+              : "text-slate-300 hover:text-white"
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
+          <span>{t.navShowroom}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setViewMode("workspace")}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+            viewMode === "workspace"
+              ? isLight
+                ? "bg-slate-900 text-white shadow-xs"
+                : "bg-cyan-500/25 text-white ring-1 ring-cyan-400/50"
+              : isLight
+              ? "text-slate-600 hover:text-slate-950"
+              : "text-slate-300 hover:text-white"
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5 text-cyan-500" />
+          <span>{t.navWorkspace}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setViewMode("radar")}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+            viewMode === "radar"
+              ? isLight
+                ? "bg-slate-900 text-white shadow-xs"
+                : "bg-cyan-500/25 text-white ring-1 ring-cyan-400/50"
+              : isLight
+              ? "text-slate-600 hover:text-slate-950"
+              : "text-slate-300 hover:text-white"
+          }`}
+        >
+          <Radar className="w-3.5 h-3.5 text-cyan-500" />
+          <span>
+            {t.navHistory}
+            {incidentFeed.length > 0 && ` (${incidentFeed.length})`}
+          </span>
+        </button>
+      </nav>
+
+      {/* 5. Minimal Footer */}
       <footer
         className={`relative z-10 py-3 px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs backdrop-blur-sm ${
           isLight
