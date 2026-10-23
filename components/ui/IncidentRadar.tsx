@@ -104,7 +104,7 @@ export function IncidentRadar({
 }: IncidentRadarProps) {
   const [isLocating, setIsLocating] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string>("trauma-108");
-  const [viewModeTab, setViewModeTab] = useState<"dual" | "globe" | "map">("dual");
+  const [viewModeTab, setViewModeTab] = useState<"globe" | "map">("globe");
   const isLight = theme === "light";
 
   // Parse coordinates or fallback to Pune/Mumbai Central Command (18.5204, 73.8567)
@@ -285,36 +285,27 @@ export function IncidentRadar({
         >
           <button
             type="button"
-            onClick={() => setViewModeTab("dual")}
-            className={`px-3 py-1 rounded-full text-xs transition cursor-pointer ${
-              viewModeTab === "dual"
-                ? "bg-cyan-600 text-white shadow-2xs"
-                : "hover:text-cyan-500"
-            }`}
-          >
-            Dual View
-          </button>
-          <button
-            type="button"
             onClick={() => setViewModeTab("globe")}
-            className={`px-3 py-1 rounded-full text-xs transition cursor-pointer ${
+            className={`px-3 py-1 rounded-full text-xs transition cursor-pointer flex items-center gap-1.5 ${
               viewModeTab === "globe"
                 ? "bg-cyan-600 text-white shadow-2xs"
                 : "hover:text-cyan-500"
             }`}
           >
-            3D Planetary Radar
+            <Radar className="w-3.5 h-3.5" />
+            <span>3D Planetary Radar</span>
           </button>
           <button
             type="button"
             onClick={() => setViewModeTab("map")}
-            className={`px-3 py-1 rounded-full text-xs transition cursor-pointer ${
+            className={`px-3 py-1 rounded-full text-xs transition cursor-pointer flex items-center gap-1.5 ${
               viewModeTab === "map"
                 ? "bg-cyan-600 text-white shadow-2xs"
                 : "hover:text-cyan-500"
             }`}
           >
-            Street Map
+            <MapPin className="w-3.5 h-3.5" />
+            <span>Street-Level Map</span>
           </button>
         </div>
       </div>
@@ -323,40 +314,72 @@ export function IncidentRadar({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* Left 7 Columns: Live OpenStreetMap + Tactical Radar HUD */}
         <div
-          className={`lg:col-span-7 rounded-3xl overflow-hidden relative min-h-[380px] flex flex-col justify-between p-4 backdrop-blur-md ${
-            isLight
-              ? "bg-white/80 shadow-sm"
-              : "bg-slate-950/75"
+          className={`lg:col-span-7 rounded-3xl overflow-hidden relative min-h-[430px] flex flex-col justify-between p-5 transition-all duration-300 ${
+            viewModeTab === "map"
+              ? isLight
+                ? "bg-white/85 shadow-sm border border-slate-200/80"
+                : "bg-slate-950/80 border border-slate-800"
+              : isLight
+              ? "bg-white/10 border border-cyan-500/35 shadow-lg shadow-cyan-950/5 backdrop-blur-[2px]"
+              : "bg-slate-950/20 border border-cyan-400/40 shadow-lg shadow-cyan-500/10 backdrop-blur-[2px]"
           }`}
         >
           {/* Live Tactical Display (3D Planetary HUD or OpenStreetMap Layer) */}
           {viewModeTab === "globe" ? (
-            <div className="relative w-full h-[340px] rounded-2xl overflow-hidden flex flex-col justify-between p-4 border border-cyan-500/30 bg-cyan-950/10">
+            <div className="relative w-full h-[360px] rounded-2xl overflow-hidden flex flex-col justify-between p-4 pointer-events-none">
+              {/* Top HUD Telemetry */}
               <div className="flex items-center justify-between text-xs font-mono">
-                <span className="px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-400 font-bold flex items-center gap-1.5">
+                <span
+                  className={`px-3 py-1 rounded-full font-bold flex items-center gap-2 backdrop-blur-md ${
+                    isLight
+                      ? "bg-white/90 text-cyan-800 shadow-xs border border-cyan-500/30"
+                      : "bg-slate-950/90 text-cyan-300 border border-cyan-400/40"
+                  }`}
+                >
                   <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                  3D PLANETARY RADAR ACTIVE
+                  <span>3D PLANETARY RADAR ACTIVE</span>
                 </span>
-                <span className="opacity-70">
+                <span
+                  className={`px-3 py-1 rounded-full text-[11px] font-mono backdrop-blur-md ${
+                    isLight
+                      ? "bg-white/85 text-slate-700 shadow-2xs"
+                      : "bg-slate-900/85 text-slate-300"
+                  }`}
+                >
                   SECTOR: {parsedCoords.lat.toFixed(4)}° N, {parsedCoords.lon.toFixed(4)}° E
                 </span>
               </div>
 
-              {/* Central Tactical Reticle */}
+              {/* Central Tactical Reticle Framing 3D Earth */}
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                <div className="w-48 h-48 rounded-full border border-cyan-500/40 flex items-center justify-center animate-pulse">
-                  <div className="w-24 h-24 rounded-full border border-amber-500/40 flex items-center justify-center">
-                    <Crosshair className="w-6 h-6 text-red-500" />
+                <div className="w-80 h-80 rounded-full border border-cyan-500/30 flex items-center justify-center relative">
+                  <span className="absolute top-1 text-[9px] font-mono text-cyan-500/70 uppercase">
+                    5.0 km Perimeter
+                  </span>
+                  <div className="w-52 h-52 rounded-full border border-amber-500/40 flex items-center justify-center relative">
+                    <span className="absolute top-1 text-[9px] font-mono text-amber-500/70 uppercase">
+                      2.0 km Ring
+                    </span>
+                    <div className="w-28 h-28 rounded-full border border-red-500/50 flex items-center justify-center relative animate-pulse">
+                      <Crosshair className="w-6 h-6 text-red-500 opacity-80" />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="text-[11px] font-mono opacity-80 self-end">
-                Move cursor for inertial parallax · Click any sector above to rotate 3D Earth
+              {/* Tactical Status Subtitle */}
+              <div
+                className={`self-end px-3 py-1 rounded-full text-[11px] font-mono backdrop-blur-md ${
+                  isLight
+                    ? "bg-white/80 text-slate-700 shadow-2xs"
+                    : "bg-slate-900/80 text-slate-300"
+                }`}
+              >
+                Planetary camera centered on locked sector · Hover to tilt
               </div>
             </div>
           ) : (
-            <div className="relative w-full h-[340px] rounded-2xl overflow-hidden">
+            <div className="relative w-full h-[360px] rounded-2xl overflow-hidden">
               <iframe
                 title="ResQvanta Live Emergency Sector Map"
                 src={osmEmbedUrl}
@@ -414,7 +437,7 @@ export function IncidentRadar({
               href={selectedNode.googleMapsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition cursor-pointer shadow-xs"
             >
               <Navigation className="w-3.5 h-3.5" />
               <span>Launch Turn-by-Turn GPS</span>

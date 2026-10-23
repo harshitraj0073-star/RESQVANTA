@@ -128,7 +128,7 @@ export function HolographicCore({
 
   // View-mode aware opacity
   const sceneOpacityMultiplier =
-    viewMode === "hero" ? 1.0 : viewMode === "workspace" ? 0.28 : 0.85;
+    viewMode === "hero" ? 1.0 : viewMode === "workspace" ? 0.28 : 0.88;
 
   // Stylized procedural Earth texture with continents, coastlines, graticules & dot matrix
   const earthTexture = useMemo(() => {
@@ -217,14 +217,14 @@ export function HolographicCore({
     return positions;
   }, []);
 
-  // Camera choreography across views (Cinematic close-up zoom in Radar mode!)
+  // Camera choreography across views (Cinematic close-up framing in Radar mode)
   const targetCameraPos = useMemo(() => {
     if (viewMode === "hero" && activeHotspot) {
       const found = CORE_HOTSPOTS.find((h) => h.id === activeHotspot);
       if (found) return new THREE.Vector3(...found.cameraTarget);
     }
     if (viewMode === "hero") return new THREE.Vector3(0, 0.18, 5.05);
-    if (viewMode === "radar") return new THREE.Vector3(0, 0, 2.72); // Close planetary tactical zoom!
+    if (viewMode === "radar") return new THREE.Vector3(0, 0, 3.05); // Clean tactical planetary zoom!
     return new THREE.Vector3(1.85, 0.1, 6.3);
   }, [viewMode, activeHotspot]);
 
@@ -247,7 +247,20 @@ export function HolographicCore({
       deltaFactor
     );
 
-    // 2. Camera Dolly Zoom
+    // 2. Tactical Group Centering in Radar Mode (Frames Earth inside left Radar Viewport on desktop)
+    if (groupRef.current) {
+      const isDesktop =
+        typeof window !== "undefined" && window.innerWidth >= 1024;
+      const targetGroupPosX = viewMode === "radar" && isDesktop ? -1.1 : 0;
+      groupRef.current.position.x = THREE.MathUtils.damp(
+        groupRef.current.position.x,
+        targetGroupPosX,
+        3.5,
+        deltaFactor
+      );
+    }
+
+    // 3. Camera Dolly Zoom
     const cameraLerpSpeed = viewMode === "radar" ? 2.8 : 2.2;
     camera.position.lerp(targetCameraPos, deltaFactor * cameraLerpSpeed);
     camera.lookAt(0, 0, 0);
@@ -265,7 +278,7 @@ export function HolographicCore({
       ? 0.35
       : 0.12;
 
-    // 3. Earth Rotation & Orientation Transition
+    // 4. Earth Rotation & Orientation Transition
     if (earthRotationGroupRef.current) {
       if (viewMode === "radar") {
         // Smoothly orient Earth towards target GPS coordinates
@@ -314,7 +327,7 @@ export function HolographicCore({
       }
     }
 
-    // 4. Multi-Layer Parallax: Atmosphere Specular Shift & Pulse
+    // 5. Multi-Layer Parallax: Atmosphere Specular Shift & Pulse
     if (atmosphereRef.current) {
       atmosphereRef.current.position.x =
         -pointerRef.current.x * 0.05 * parallaxWeight;
@@ -327,7 +340,7 @@ export function HolographicCore({
       atmosphereRef.current.scale.set(pulse, pulse, pulse);
     }
 
-    // 5. Multi-Layer Parallax: Orbital Telemetry Rings
+    // 6. Multi-Layer Parallax: Orbital Telemetry Rings
     if (orbitalGroupRef.current) {
       orbitalGroupRef.current.position.x =
         pointerRef.current.x * 0.08 * parallaxWeight;
@@ -342,14 +355,14 @@ export function HolographicCore({
       ring2Ref.current.rotation.y -= deltaFactor * 0.06 * speedMultiplier;
     }
 
-    // 6. Orbital Dust Drift
+    // 7. Orbital Dust Drift
     if (particlesRef.current) {
       particlesRef.current.rotation.y += deltaFactor * 0.02;
       particlesRef.current.position.x =
         -pointerRef.current.x * 0.03 * parallaxWeight;
     }
 
-    // 7. Animate Traveling Emergency Signal Pulses along Arcs
+    // 8. Animate Traveling Emergency Signal Pulses along Arcs
     if (signalPulsesRef.current) {
       const tNow = state.clock.elapsedTime;
       signalPulsesRef.current.children.forEach((child, idx) => {
@@ -361,12 +374,12 @@ export function HolographicCore({
       });
     }
 
-    // 8. Animate Concentric Expanding Radar Waves at Epicenter (Radar View)
+    // 9. Animate Concentric Expanding Radar Waves at Epicenter (Radar View)
     if (radarRippleGroupRef.current) {
       const tNow = state.clock.elapsedTime;
       radarRippleGroupRef.current.children.forEach((child, idx) => {
         const progress = (tNow * 0.8 + idx * 0.33) % 1;
-        const scale = 0.08 + progress * 0.55;
+        const scale = 0.08 + progress * 0.45;
         child.scale.set(scale, scale, 1);
         const mesh = child as THREE.Mesh;
         if (mesh.material) {
@@ -433,8 +446,8 @@ export function HolographicCore({
                   : 0.94
                 : viewMode === "radar"
                 ? isLight
-                  ? 0.88
-                  : 0.92
+                  ? 0.92
+                  : 0.95
                 : isLight
                 ? 0.34
                 : 0.3
@@ -507,8 +520,8 @@ export function HolographicCore({
         {viewMode === "radar" && (
           <group position={epicenterVector} quaternion={epicenterQuaternion}>
             {/* Glowing Tactical Epicenter Marker */}
-            <mesh position={[0, 0, 0.03]}>
-              <sphereGeometry args={[0.045, 16, 16]} />
+            <mesh position={[0, 0, 0.025]}>
+              <sphereGeometry args={[0.04, 16, 16]} />
               <meshBasicMaterial
                 color={isLight ? "#dc2626" : "#f59e0b"}
                 transparent
@@ -516,8 +529,8 @@ export function HolographicCore({
               />
             </mesh>
 
-            <mesh position={[0, 0, 0.08]}>
-              <cylinderGeometry args={[0.006, 0.006, 0.14, 8]} />
+            <mesh position={[0, 0, 0.07]}>
+              <cylinderGeometry args={[0.005, 0.005, 0.12, 8]} />
               <meshBasicMaterial
                 color={isLight ? "#0891b2" : "#22d3ee"}
                 transparent
@@ -528,8 +541,8 @@ export function HolographicCore({
             {/* Concentric Expanding Radar Pulse Waves on the Globe Surface */}
             <group ref={radarRippleGroupRef}>
               {[0, 1, 2].map((ringIdx) => (
-                <mesh key={`radar-ripple-${ringIdx}`} position={[0, 0, 0.01]}>
-                  <ringGeometry args={[0.9, 1.0, 32]} />
+                <mesh key={`radar-ripple-${ringIdx}`} position={[0, 0, 0.008]}>
+                  <ringGeometry args={[0.88, 1.0, 32]} />
                   <meshBasicMaterial
                     color={isLight ? "#0891b2" : "#38bdf8"}
                     side={THREE.DoubleSide}
@@ -539,29 +552,6 @@ export function HolographicCore({
                 </mesh>
               ))}
             </group>
-
-            {/* 3D Floating Epicenter Telemetry Tag */}
-            <Html
-              position={[0, 0.12, 0.05]}
-              center
-              distanceFactor={6}
-              zIndexRange={[30, 0]}
-              style={{ pointerEvents: "none" }}
-            >
-              <div
-                className={`px-3 py-1.5 rounded-xl backdrop-blur-md text-[10px] font-mono font-bold whitespace-nowrap shadow-lg flex items-center gap-2 border ${
-                  isLight
-                    ? "bg-white/95 text-slate-900 border-cyan-500/40 shadow-cyan-900/10"
-                    : "bg-slate-950/95 text-cyan-300 border-cyan-400/40 shadow-cyan-500/20"
-                }`}
-              >
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                <span>
-                  RADAR LOCKED: {parsedCoords.lat.toFixed(3)}°N,{" "}
-                  {parsedCoords.lon.toFixed(3)}°E
-                </span>
-              </div>
-            </Html>
           </group>
         )}
       </group>
