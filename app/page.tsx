@@ -26,16 +26,51 @@ const SceneCanvas = dynamic(() => import("@/components/scene/SceneCanvas"), {
 
 type AnalysisLifecycle = "idle" | "validating" | "analyzing" | "success" | "error";
 
+interface AnalysisPayload {
+  text: string;
+  imageBase64: string | null;
+  imageMimeType: string | null;
+  gpsCoords: string | null;
+  manualLocation: string;
+}
+
 export default function ResQvantaApp() {
   const [viewMode, setViewMode] = useState<"hero" | "workspace" | "radar">(
     "hero"
   );
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("resqvanta_theme");
+        if (saved === "dark" || saved === "light") return saved;
+      } catch {
+        // SSR
+      }
+    }
+    return "light";
+  });
   const [is3DMode, setIs3DMode] = useState(true);
   const [activeHotspot, setActiveHotspot] = useState<string | null>(
     "multimodal"
   );
-  const [language, setLanguage] = useState<SupportedLanguage>("en-IN");
+  const [language, setLanguage] = useState<SupportedLanguage>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("resqvanta_lang");
+        if (
+          saved === "en-IN" ||
+          saved === "hi-IN" ||
+          saved === "mr-IN" ||
+          saved === "gu-IN"
+        ) {
+          return saved;
+        }
+      } catch {
+        // SSR
+      }
+    }
+    return "en-IN";
+  });
 
   // Unified Controlled Draft State
   const [inputText, setInputText] = useState("");
@@ -52,7 +87,7 @@ export default function ResQvantaApp() {
 
   const [triageReport, setTriageReport] = useState<TriageReport | null>(null);
   const [incidentFeed, setIncidentFeed] = useState<TriageReport[]>([]);
-  const [lastPayload, setLastPayload] = useState<any>(null);
+  const [lastPayload, setLastPayload] = useState<AnalysisPayload | null>(null);
 
   // Refs to guarantee zero race conditions or stale overwrites
   const activeRequestIdRef = useRef<string | null>(null);
@@ -60,28 +95,11 @@ export default function ResQvantaApp() {
 
   useEffect(() => {
     try {
-      const savedTheme = localStorage.getItem("resqvanta_theme");
-      if (savedTheme === "dark" || savedTheme === "light") {
-        setTheme(savedTheme);
-        document.documentElement.setAttribute("data-theme", savedTheme);
-      } else {
-        setTheme("light");
-        document.documentElement.setAttribute("data-theme", "light");
-      }
-
-      const savedLang = localStorage.getItem("resqvanta_lang");
-      if (
-        savedLang === "en-IN" ||
-        savedLang === "hi-IN" ||
-        savedLang === "mr-IN" ||
-        savedLang === "gu-IN"
-      ) {
-        setLanguage(savedLang);
-      }
+      document.documentElement.setAttribute("data-theme", theme);
     } catch {
-      // ignore storage errors
+      // ignore
     }
-  }, []);
+  }, [theme]);
 
   const handleToggleTheme = () => {
     const nextTheme = theme === "light" ? "dark" : "light";
@@ -210,18 +228,19 @@ export default function ResQvantaApp() {
         ...prev.filter((item) => item.requestId !== data.requestId),
       ]);
       setLifecycle("success");
-    } catch (err: any) {
-      if (err?.name === "AbortError") {
+    } catch (err: unknown) {
+      if ((err as { name?: string })?.name === "AbortError") {
         return;
       }
       if (activeRequestIdRef.current !== requestId) {
         return;
       }
       setLifecycle("error");
-      setApiError(
-        err.message ||
-          "Could not complete Gemini analysis. If this is an emergency, please call 112 immediately."
-      );
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Could not complete Gemini analysis. If this is an emergency, please call 112 immediately.";
+      setApiError(message);
     }
   };
 
@@ -257,8 +276,10 @@ export default function ResQvantaApp() {
 
       setTriageReport(updatedData);
       setIncidentFeed((prev) => [updatedData, ...prev]);
-    } catch (err: any) {
-      setApiError(err.message || "Could not update report with correction.");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Could not update report with correction.";
+      setApiError(message);
     } finally {
       setIsResolving(false);
     }

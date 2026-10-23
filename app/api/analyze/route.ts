@@ -41,8 +41,17 @@ export async function POST(req: NextRequest) {
       gpsCoords,
       manualLocation,
       followUpContext,
+      additionalDetails,
       language = "en-IN",
     } = body;
+
+    const resolvedFollowUp = (
+      typeof followUpContext === "string" && followUpContext.trim()
+        ? followUpContext.trim()
+        : typeof additionalDetails === "string" && additionalDetails.trim()
+        ? additionalDetails.trim()
+        : ""
+    );
 
     const cleanText = typeof text === "string" ? text.trim() : "";
     const hasImage = Boolean(imageBase64);
@@ -68,7 +77,10 @@ export async function POST(req: NextRequest) {
         : "en-IN";
 
     const ai = new GoogleGenAI({ apiKey });
-    const parts: any[] = [];
+    const parts: Array<
+      | { text: string }
+      | { inlineData: { mimeType: string; data: string } }
+    > = [];
 
     let combinedPrompt = `[Target Output Language (${langCode}): ${LANGUAGE_INSTRUCTIONS[langCode]}]\n`;
     combinedPrompt += `[IMPORTANT: Analyze ONLY the user's specific situation described below. Do NOT give generic advice. Tailor actions specifically to this problem.]\n`;
@@ -79,8 +91,8 @@ export async function POST(req: NextRequest) {
     if (gpsCoords && typeof gpsCoords === "string" && gpsCoords.trim()) {
       combinedPrompt += `[GPS Coordinates: ${gpsCoords.trim()}]\n`;
     }
-    if (followUpContext && typeof followUpContext === "string" && followUpContext.trim()) {
-      combinedPrompt += `[User Clarification / Follow-Up Details: "${followUpContext.trim()}"]\n`;
+    if (resolvedFollowUp) {
+      combinedPrompt += `[User Clarification / Follow-Up Details: "${resolvedFollowUp}"]\n`;
     }
     if (cleanText) {
       combinedPrompt += `[User's Emergency Description]:\n"${cleanText}"\n`;
@@ -147,12 +159,13 @@ export async function POST(req: NextRequest) {
 
     const validatedReport = validateTriageReport(parsedData);
     return NextResponse.json(validatedReport);
-  } catch (error: any) {
-    console.error("ResQvanta Gemini API Error:", error?.message || error);
+  } catch (error: unknown) {
+    const errorMsg = error instanceof Error ? error.message : "Unknown error";
+    console.error("ResQvanta Gemini API Error:", errorMsg);
     return NextResponse.json(
       {
         error:
-          error.message ||
+          errorMsg ||
           "Could not analyze with Gemini. If this is an immediate life-threatening emergency, call 112 directly.",
       },
       { status: 500 }

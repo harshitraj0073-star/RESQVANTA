@@ -70,7 +70,7 @@ export const TriageReportSchema = z.object({
 });
 
 export function validateTriageReport(data: unknown): TriageReport {
-  const raw = { ...(data as Record<string, any>) };
+  const raw = { ...(data as Record<string, unknown>) };
   if (Array.isArray(raw.immediate_actions) && raw.immediate_actions.length > 3) {
     raw.immediate_actions = raw.immediate_actions.slice(0, 3);
   }
@@ -83,8 +83,9 @@ export function validateTriageReport(data: unknown): TriageReport {
   if (!raw.submittedAt) {
     raw.submittedAt = new Date().toISOString();
   }
-  if (raw.verification_matrix && !Array.isArray(raw.verification_matrix.image_observations)) {
-    raw.verification_matrix.image_observations = [];
+  const matrix = raw.verification_matrix as Record<string, unknown> | undefined;
+  if (matrix && !Array.isArray(matrix.image_observations)) {
+    matrix.image_observations = [];
   }
   return TriageReportSchema.parse(raw) as TriageReport;
 }

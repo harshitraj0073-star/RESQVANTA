@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { TriageReport } from "@/types/triage";
 import { SupportedLanguage, UIStrings } from "@/lib/translations";
 import {
@@ -47,16 +47,18 @@ export function ActionCard({
   const [correctionInput, setCorrectionInput] = useState("");
   const [copied, setCopied] = useState(false);
   const [selectedTraceIdx, setSelectedTraceIdx] = useState<number | null>(0);
+  const [prevReportId, setPrevReportId] = useState(report.requestId);
   const [editableBrief, setEditableBrief] = useState(
     report.dispatch_packet_text
   );
 
-  const isLight = theme === "light";
-
-  useEffect(() => {
+  if (report.requestId !== prevReportId) {
+    setPrevReportId(report.requestId);
     setEditableBrief(report.dispatch_packet_text);
     setSelectedTraceIdx(report.evidence_trace?.length ? 0 : null);
-  }, [report]);
+  }
+
+  const isLight = theme === "light";
 
   const handleCopyBrief = () => {
     navigator.clipboard.writeText(editableBrief);

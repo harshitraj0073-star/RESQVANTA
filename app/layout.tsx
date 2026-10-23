@@ -15,7 +15,24 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "ResQvanta AI — From Human Panic to Informed Action",
   description:
-    "Universal Emergency Information Assistant powered by Google Gemini 3.8 Flash. Supports English, Hindi, Marathi, and Gujarati.",
+    "Universal Emergency Information & Multilingual Triage Assistant built for PromptWars × ALTA School of Technology. Powered by Google Gemini AI with English, Hindi, Marathi, and Gujarati support.",
+  keywords: [
+    "ResQvanta",
+    "PromptWars",
+    "ALTA School of Technology",
+    "Hack2Skill",
+    "Google Gemini",
+    "Emergency Triage",
+    "Disaster Response",
+    "112 India",
+  ],
+  authors: [{ name: "Harshit Raj" }],
+  openGraph: {
+    title: "ResQvanta AI — From Human Panic to Informed Action",
+    description:
+      "Universal Multilingual Emergency Triage Assistant built for PromptWars × ALTA School of Technology.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

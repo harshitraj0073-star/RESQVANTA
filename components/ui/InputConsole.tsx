@@ -15,6 +15,23 @@ import {
   PhoneCall,
 } from "lucide-react";
 
+interface MinimalSpeechRecognition {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onstart: (() => void) | null;
+  onresult: ((event: { results?: Array<Array<{ transcript?: string }>> }) => void) | null;
+  onerror: ((event: { error?: string }) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+
+interface WindowWithSpeech {
+  SpeechRecognition?: new () => MinimalSpeechRecognition;
+  webkitSpeechRecognition?: new () => MinimalSpeechRecognition;
+}
+
 type VoiceStatus =
   | "ready"
   | "requesting"
@@ -72,7 +89,7 @@ export function InputConsole({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<MinimalSpeechRecognition | null>(null);
   const isLight = theme === "light";
 
   useEffect(() => {
@@ -152,9 +169,8 @@ export function InputConsole({
   const toggleSpeechRecognition = () => {
     if (typeof window === "undefined") return;
 
-    const SpeechRec =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
+    const win = window as unknown as WindowWithSpeech;
+    const SpeechRec = win.SpeechRecognition || win.webkitSpeechRecognition;
 
     if (!SpeechRec) {
       setVoiceStatus("unsupported");
@@ -185,7 +201,7 @@ export function InputConsole({
         setVoiceStatus("listening");
       };
 
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event) => {
         const transcript = event.results?.[0]?.[0]?.transcript;
         if (transcript) {
           onInputTextChange(
@@ -197,7 +213,7 @@ export function InputConsole({
         }
       };
 
-      recognition.onerror = (event: any) => {
+      recognition.onerror = (event) => {
         const err = event?.error;
         if (err === "not-allowed" || err === "service-not-allowed") {
           setVoiceStatus("denied");
@@ -473,6 +489,7 @@ export function InputConsole({
                 isLight ? "bg-white/80 shadow-sm" : "bg-slate-950/70"
               }`}
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={imageBase64}
                 alt="Uploaded scene preview"
