@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { TopNav } from "@/components/ui/TopNav";
 import { InputConsole } from "@/components/ui/InputConsole";
@@ -9,24 +9,34 @@ import { TriageReport, SeverityLevel } from "@/types/triage";
 import { PRESET_SCENARIOS } from "@/lib/presets";
 import { CORE_HOTSPOTS } from "@/components/scene/HolographicCore";
 import {
+  SupportedLanguage,
+  UI_TRANSLATIONS,
+} from "@/lib/translations";
+import { GEMINI_MODEL_ID } from "@/lib/geminiSchema";
+import {
   ArrowRight,
   Sparkles,
-  Radio,
   PhoneCall,
   Layers,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 
 const SceneCanvas = dynamic(() => import("@/components/scene/SceneCanvas"), {
   ssr: false,
-  loading: () => <div className="w-full h-full bg-[#04070f]" />
+  loading: () => <div className="w-full h-full" />,
 });
 
 export default function ResQvantaApp() {
-  const [viewMode, setViewMode] = useState<"hero" | "workspace" | "radar">("hero");
+  const [viewMode, setViewMode] = useState<"hero" | "workspace" | "radar">(
+    "hero"
+  );
+  // Default to Light Mode unless user already saved a preference
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [is3DMode, setIs3DMode] = useState(true);
-  const [activeHotspot, setActiveHotspot] = useState<string | null>("multimodal");
-  const [language, setLanguage] = useState("English");
+  const [activeHotspot, setActiveHotspot] = useState<string | null>(
+    "multimodal"
+  );
+  const [language, setLanguage] = useState<SupportedLanguage>("en-IN");
   const [gpsActive, setGpsActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
@@ -35,6 +45,55 @@ export default function ResQvantaApp() {
   const [triageReport, setTriageReport] = useState<TriageReport | null>(null);
   const [incidentFeed, setIncidentFeed] = useState<TriageReport[]>([]);
   const [lastPayload, setLastPayload] = useState<any>(null);
+
+  // Sync persisted theme & language on mount
+  useEffect(() => {
+    try {
+      const savedTheme = localStorage.getItem("resqvanta_theme");
+      if (savedTheme === "dark" || savedTheme === "light") {
+        setTheme(savedTheme);
+        document.documentElement.setAttribute("data-theme", savedTheme);
+      } else {
+        setTheme("light");
+        document.documentElement.setAttribute("data-theme", "light");
+      }
+
+      const savedLang = localStorage.getItem("resqvanta_lang");
+      if (
+        savedLang === "en-IN" ||
+        savedLang === "hi-IN" ||
+        savedLang === "mr-IN" ||
+        savedLang === "gu-IN"
+      ) {
+        setLanguage(savedLang);
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
+
+  const handleToggleTheme = () => {
+    const nextTheme = theme === "light" ? "dark" : "light";
+    setTheme(nextTheme);
+    document.documentElement.setAttribute("data-theme", nextTheme);
+    try {
+      localStorage.setItem("resqvanta_theme", nextTheme);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleLanguageChange = (nextLang: SupportedLanguage) => {
+    setLanguage(nextLang);
+    try {
+      localStorage.setItem("resqvanta_lang", nextLang);
+    } catch {
+      // ignore
+    }
+  };
+
+  const t = UI_TRANSLATIONS[language];
+  const isLight = theme === "light";
 
   const coreStatus: "IDLE" | "SCANNING" | SeverityLevel = isLoading
     ? "SCANNING"
@@ -49,6 +108,7 @@ export default function ResQvantaApp() {
     gpsCoords: string | null;
     manualLocation?: string;
   }) => {
+    if (isLoading) return;
     setViewMode("workspace");
     setIsLoading(true);
     setApiError(null);
@@ -60,13 +120,15 @@ export default function ResQvantaApp() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...payload,
-          language
-        })
+          language,
+        }),
       });
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || `Server returned HTTP ${res.status}`);
+        throw new Error(
+          errData.error || `Server returned HTTP ${res.status}`
+        );
       }
 
       const data: TriageReport = await res.json();
@@ -94,8 +156,8 @@ export default function ResQvantaApp() {
         body: JSON.stringify({
           ...lastPayload,
           followUpContext: additionalDetails,
-          language
-        })
+          language,
+        }),
       });
 
       if (!res.ok) {
@@ -112,61 +174,89 @@ export default function ResQvantaApp() {
     }
   };
 
-  const currentHotspotObj =
-    CORE_HOTSPOTS.find((h) => h.id === activeHotspot) || CORE_HOTSPOTS[0];
-
   return (
-    <div className="min-h-screen bg-[#04070f] text-slate-100 relative overflow-x-hidden flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
-      {/* 1. Luxury Showroom 3D WebGL Spatial Background */}
+    <div
+      className={`min-h-screen relative overflow-x-hidden flex flex-col justify-between transition-colors ${
+        isLight
+          ? "bg-[#f6f8fb] text-slate-900 selection:bg-cyan-600 selection:text-white"
+          : "bg-[#04070f] text-slate-100 selection:bg-cyan-400 selection:text-slate-950"
+      }`}
+    >
+      {/* 1. Theme-Aware Interactive 3D Background (Visible across all screens) */}
       {is3DMode && (
         <div className="fixed inset-0 z-0 pointer-events-auto">
           <SceneCanvas
             status={coreStatus}
             viewMode={viewMode}
+            theme={theme}
             activeHotspot={activeHotspot}
             onSelectHotspot={setActiveHotspot}
+            t={t}
           />
         </div>
       )}
 
-      {/* 2. Top Navigation Bar (With Always-Visible Call 112 Button) */}
+      {/* 2. Top Navigation Bar */}
       <TopNav
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
         is3DMode={is3DMode}
         onToggle3D={() => setIs3DMode(!is3DMode)}
         language={language}
-        onLanguageChange={setLanguage}
-        gpsActive={gpsActive}
+        onLanguageChange={handleLanguageChange}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        t={t}
+        historyCount={incidentFeed.length}
       />
 
-      {/* 3. Main Three-Act Experience Controller */}
+      {/* 3. Open Borderless Content Layer */}
       <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 md:px-8 py-6 flex flex-col justify-center pointer-events-none">
         {/* ==================== ACT 1: THE LUXURY ENTRANCE ==================== */}
         {viewMode === "hero" && (
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-8 my-auto py-6">
-            {/* Left Showroom Pitch Card */}
-            <div className="max-w-xl space-y-5 pointer-events-auto bg-[#070b14]/85 backdrop-blur-2xl p-6 md:p-8 rounded-3xl border border-slate-800/90 shadow-2xl">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-mono">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center my-auto py-4">
+            {/* Left Floating Typography & Primary Actions */}
+            <div
+              className={`lg:col-span-7 space-y-5 pointer-events-auto rounded-3xl p-6 md:p-9 backdrop-blur-md transition-colors ${
+                isLight
+                  ? "bg-white/65 shadow-xl shadow-slate-900/5"
+                  : "bg-[#060a14]/60"
+              }`}
+            >
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span
+                  className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-mono font-semibold ${
+                    isLight
+                      ? "bg-cyan-600/10 text-cyan-800"
+                      : "bg-cyan-400/10 text-cyan-300"
+                  }`}
+                >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Powered by Google Gemini 3.8 Flash</span>
-                </span>
-                <span className="text-[11px] font-mono text-slate-400">
-                  ResQvanta AI — From Chaos to Action
+                  <span>
+                    {t.modelBadgePrefix} ({GEMINI_MODEL_ID})
+                  </span>
                 </span>
               </div>
 
-              <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-[1.12]">
-                From Human Panic to{" "}
-                <span className="bg-gradient-to-r from-cyan-300 via-cyan-400 to-amber-300 bg-clip-text text-transparent">
-                  Informed Action.
+              <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-[1.12]">
+                {t.heroHeadlinePart1}{" "}
+                <span
+                  className={
+                    isLight
+                      ? "text-cyan-700"
+                      : "bg-gradient-to-r from-cyan-300 via-cyan-400 to-amber-300 bg-clip-text text-transparent"
+                  }
+                >
+                  {t.heroHeadlineHighlight}
                 </span>
               </h1>
 
-              <p className="text-sm text-slate-300 leading-relaxed">
-                Transform uncertain situations into structured information and clearer next steps.{" "}
-                <strong className="text-white">ResQvanta AI</strong> takes messy multilingual text, voice, or photos and separates reported facts from AI-identified risks—helping you prepare a clear 112 Emergency Brief.
+              <p
+                className={`text-sm sm:text-base max-w-xl leading-relaxed ${
+                  isLight ? "text-slate-700" : "text-slate-300"
+                }`}
+              >
+                {t.heroSupportText}
               </p>
 
               {/* Primary CTAs */}
@@ -179,55 +269,74 @@ export default function ResQvantaApp() {
                       imageBase64: null,
                       imageMimeType: null,
                       gpsCoords: null,
-                      manualLocation: "Fictional Demo Scenario A"
+                      manualLocation: "Fictional Demo Scenario A",
                     });
                   }}
-                  className="px-5 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-300 hover:to-cyan-400 text-slate-950 font-bold text-xs tracking-wide uppercase shadow-xl shadow-cyan-500/20 border border-cyan-300 transition transform active:scale-95 cursor-pointer flex items-center gap-2"
+                  className="px-6 py-3.5 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs tracking-wide uppercase shadow-md transition transform active:scale-95 cursor-pointer flex items-center gap-2"
                 >
-                  <span>⚡ 1-Tap Live Demo</span>
+                  <span>⚡ {t.btnLiveDemo}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setViewMode("workspace")}
-                  className="px-5 py-3.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-white font-semibold text-xs border border-slate-700 transition flex items-center space-x-2 cursor-pointer"
+                  className={`px-6 py-3.5 rounded-full font-semibold text-xs transition flex items-center space-x-2 cursor-pointer ${
+                    isLight
+                      ? "bg-slate-900 text-white hover:bg-slate-800"
+                      : "bg-white/10 text-white hover:bg-white/20"
+                  }`}
                 >
-                  <span>Enter Incident Workspace</span>
-                  <ArrowRight className="w-4 h-4 text-cyan-400" />
+                  <span>{t.btnEnterWorkspace}</span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Direct Emergency Contact Option (Never Delayed by Intro) */}
-              <div className="pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-xs">
-                <span className="text-slate-400">
-                  Facing a real-world emergency right now? Skip the assistant:
+              {/* Emergency-First Skip Link */}
+              <div className="pt-2 flex flex-wrap items-center gap-3 text-xs">
+                <span className={isLight ? "text-slate-600" : "text-slate-400"}>
+                  {t.emergencySkipPrompt}
                 </span>
                 <a
                   href="tel:112"
-                  className="inline-flex items-center gap-1.5 text-red-400 hover:text-red-300 font-bold"
+                  className="inline-flex items-center gap-1.5 text-red-600 dark:text-red-400 font-bold hover:underline"
                 >
                   <PhoneCall className="w-3.5 h-3.5" />
-                  <span>Call 112 Emergency Services</span>
+                  <span>{t.emergencyCallNow}</span>
                 </a>
               </div>
             </div>
 
-            {/* Right Interactive Hotspot Inspector (Works with 3D Clicks, Keyboard, and Mobile/2D Mode) */}
-            <div className="pointer-events-auto lg:max-w-sm w-full space-y-3">
-              <div className="bg-[#070b14]/85 backdrop-blur-2xl border border-slate-800/90 rounded-3xl p-5 shadow-2xl space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-mono text-cyan-400 uppercase tracking-wider">
-                    Interactive Architecture Hotspots
+            {/* Right Floating Hotspot Selector (Keyboard + Mobile Accessible) */}
+            <div className="lg:col-span-5 pointer-events-auto space-y-2.5">
+              <div
+                className={`rounded-3xl p-5 backdrop-blur-md space-y-3 ${
+                  isLight
+                    ? "bg-white/65 shadow-lg shadow-slate-900/5"
+                    : "bg-[#060a14]/60"
+                }`}
+              >
+                <div className="flex items-center justify-between px-1">
+                  <span
+                    className={`text-[11px] font-mono font-bold uppercase tracking-wider ${
+                      isLight ? "text-cyan-700" : "text-cyan-400"
+                    }`}
+                  >
+                    {t.hotspotsHeader}
                   </span>
-                  <span className="text-[10px] font-mono text-slate-400">
-                    Click or Tab
+                  <span className="text-[10px] font-mono opacity-60">
+                    {t.hotspotsHint}
                   </span>
                 </div>
 
-                {/* Accessible Hotspot Selector Buttons (Also serves as Mobile / 2D Lite alternative) */}
-                <div className="grid grid-cols-1 gap-2" role="tablist" aria-label="System Architecture Hotspots">
+                <div
+                  className="space-y-2"
+                  role="tablist"
+                  aria-label={t.hotspotsHeader}
+                >
                   {CORE_HOTSPOTS.map((spot) => {
-                    const isSelected = currentHotspotObj.id === spot.id;
+                    const isSelected = activeHotspot === spot.id;
+                    const title = t.hotspots[spot.titleKey];
+                    const desc = t.hotspots[spot.descKey];
                     return (
                       <button
                         key={spot.id}
@@ -235,27 +344,42 @@ export default function ResQvantaApp() {
                         role="tab"
                         aria-selected={isSelected}
                         onClick={() => setActiveHotspot(spot.id)}
-                        className={`text-left p-3 rounded-2xl border transition cursor-pointer ${
+                        className={`w-full text-left p-3.5 rounded-2xl transition cursor-pointer ${
                           isSelected
-                            ? "bg-cyan-500/15 border-cyan-400/60 text-white"
-                            : "bg-slate-950/70 border-slate-800/80 text-slate-400 hover:text-slate-200 hover:border-slate-700"
+                            ? isLight
+                              ? "bg-cyan-600 text-white shadow-sm"
+                              : "bg-cyan-500/20 text-white"
+                            : isLight
+                            ? "bg-slate-100/80 text-slate-700 hover:bg-slate-200/70"
+                            : "bg-white/5 text-slate-300 hover:bg-white/10"
                         }`}
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold flex items-center gap-2">
-                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300">
-                              {spot.label}
-                            </span>
-                            <span>{spot.shortTitle}</span>
+                        <div className="flex items-center gap-2 text-xs font-bold">
+                          <span
+                            className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                              isSelected
+                                ? isLight
+                                  ? "bg-white text-cyan-700"
+                                  : "bg-cyan-400 text-slate-950"
+                                : "bg-cyan-500/15 text-cyan-600 dark:text-cyan-300"
+                            }`}
+                          >
+                            {spot.label}
                           </span>
-                          {isSelected && (
-                            <span className="text-[10px] font-mono text-cyan-300">
-                              Active
-                            </span>
-                          )}
+                          <span>{title}</span>
                         </div>
-                        <p className="text-[11px] text-slate-300 mt-1.5 leading-relaxed">
-                          {spot.description}
+                        <p
+                          className={`text-xs mt-1 leading-relaxed ${
+                            isSelected
+                              ? isLight
+                                ? "text-cyan-50"
+                                : "text-slate-200"
+                              : isLight
+                              ? "text-slate-600"
+                              : "text-slate-400"
+                          }`}
+                        >
+                          {desc}
                         </p>
                       </button>
                     );
@@ -266,63 +390,76 @@ export default function ResQvantaApp() {
           </div>
         )}
 
-        {/* ==================== ACT 2 & ACT 3: WORKSPACE & EVIDENCE MATRIX ==================== */}
+        {/* ==================== ACT 2 & 3: WORKSPACE & EMERGENCY-FIRST RESULTS ==================== */}
         {viewMode === "workspace" && (
           <div className="space-y-4">
             {apiError && (
               <div
                 role="alert"
-                className="pointer-events-auto p-4 rounded-2xl bg-red-950/80 border border-red-500/50 text-xs text-red-200 flex items-center justify-between gap-4"
+                className="pointer-events-auto p-4 rounded-2xl bg-red-600 text-white text-xs flex items-center justify-between gap-4 shadow-md"
               >
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                  <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{apiError}</span>
                 </div>
                 <a
                   href="tel:112"
-                  className="px-3 py-1.5 rounded-xl bg-red-600 text-white font-bold shrink-0"
+                  className="px-3.5 py-1.5 rounded-full bg-white text-red-700 font-bold shrink-0"
                 >
-                  Call 112
+                  {t.call112}
                 </a>
               </div>
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Left Column (5 Cols): Multimodal Ingestion Console */}
+              {/* Left Column: Multimodal Input Console */}
               <div className="lg:col-span-5 pointer-events-auto">
                 <InputConsole
                   onAnalyze={handleAnalyze}
                   isLoading={isLoading}
                   onGpsChange={setGpsActive}
+                  language={language}
+                  theme={theme}
+                  t={t}
                 />
               </div>
 
-              {/* Right Column (7 Cols): Evidence Matrix & 112 Emergency Brief */}
+              {/* Right Column: Emergency-First Action Card */}
               <div className="lg:col-span-7 pointer-events-auto">
                 {triageReport ? (
                   <ActionCard
                     report={triageReport}
                     onResolveMissingInfo={handleResolveMissing}
                     isResolving={isResolving}
+                    theme={theme}
+                    t={t}
                   />
                 ) : (
-                  <div className="bg-[#090d16]/85 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-8 text-center flex flex-col items-center justify-center min-h-[420px] space-y-4">
-                    <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
-                      <Layers className="w-7 h-7" />
+                  <div
+                    className={`rounded-3xl p-8 text-center flex flex-col items-center justify-center min-h-[380px] space-y-4 backdrop-blur-md ${
+                      isLight
+                        ? "bg-white/65 text-slate-900 shadow-lg shadow-slate-900/5"
+                        : "bg-[#080d1a]/60 text-slate-100"
+                    }`}
+                  >
+                    <div
+                      className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+                        isLight
+                          ? "bg-cyan-600/10 text-cyan-700"
+                          : "bg-cyan-400/10 text-cyan-300"
+                      }`}
+                    >
+                      <Layers className="w-6 h-6" />
                     </div>
-                    <div>
-                      <h3 className="text-base font-bold text-white">
-                        Evidence &amp; Uncertainty Engine Ready
-                      </h3>
-                      <p className="text-xs text-slate-400 max-w-md mx-auto mt-1.5 leading-relaxed">
-                        Choose one of the three fictional demo scenarios on the left (Flood, Road Accident, or Coffee Spill) or enter your own description, then click{" "}
-                        <strong className="text-slate-200">Analyze with Gemini</strong>.
+                    <div className="max-w-md space-y-1.5">
+                      <h3 className="text-base font-bold">{t.readyTitle}</h3>
+                      <p
+                        className={`text-xs leading-relaxed ${
+                          isLight ? "text-slate-600" : "text-slate-400"
+                        }`}
+                      >
+                        {t.readyDescription}
                       </p>
-                    </div>
-                    <div className="text-[11px] font-mono text-cyan-300 bg-slate-950/90 px-3.5 py-1.5 rounded-xl border border-slate-800">
-                      {isLoading
-                        ? "PROCESSING LIVE WITH GEMINI 3.8 FLASH..."
-                        : "READY · SEPARATES REPORTED FACTS FROM AI INTERPRETATIONS"}
                     </div>
                   </div>
                 )}
@@ -331,57 +468,62 @@ export default function ResQvantaApp() {
           </div>
         )}
 
-        {/* ==================== VIEW 3: SESSION HISTORY ==================== */}
+        {/* ==================== VIEW 3: COMPACT SESSION HISTORY ==================== */}
         {viewMode === "radar" && (
-          <div className="pointer-events-auto bg-[#090d16]/90 backdrop-blur-2xl border border-slate-800 rounded-3xl p-6 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-              <div>
-                <div className="text-xs font-mono text-cyan-400 flex items-center gap-1.5">
-                  <Radio className="w-4 h-4" />
-                  <span>ANALYZED REPORTS IN THIS SESSION</span>
-                </div>
-                <h2 className="text-xl font-bold text-white mt-0.5">
-                  Session Incident Briefs
-                </h2>
-              </div>
+          <div
+            className={`pointer-events-auto rounded-3xl p-6 md:p-8 backdrop-blur-md space-y-6 ${
+              isLight
+                ? "bg-white/75 text-slate-900 shadow-lg shadow-slate-900/5"
+                : "bg-[#080d1a]/70 text-slate-100"
+            }`}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <h2 className="text-xl font-bold">{t.historyHeading}</h2>
               <button
                 type="button"
                 onClick={() => setViewMode("workspace")}
-                className="px-4 py-2 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold hover:bg-cyan-500/30 transition cursor-pointer"
+                className="px-4 py-2 rounded-full bg-cyan-600 text-white text-xs font-bold hover:bg-cyan-500 transition cursor-pointer"
               >
-                + New Incident Analysis
+                {t.newAnalysisBtn}
               </button>
             </div>
 
             {incidentFeed.length === 0 ? (
-              <div className="text-center py-12 text-slate-400 text-xs">
-                No scenarios analyzed in this session yet. Open the Incident Workspace to test a scenario.
+              <div className="text-center py-12 opacity-65 text-xs">
+                {t.historyEmpty}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {incidentFeed.map((item, idx) => (
-                  <div
+                  <button
                     key={idx}
+                    type="button"
                     onClick={() => {
                       setTriageReport(item);
                       setViewMode("workspace");
                     }}
-                    className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-cyan-500/50 transition cursor-pointer space-y-2"
+                    className={`text-left p-4 rounded-2xl transition cursor-pointer space-y-1.5 ${
+                      isLight
+                        ? "bg-slate-100 hover:bg-slate-200/80"
+                        : "bg-white/5 hover:bg-white/10"
+                    }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono px-2.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-bold">
-                        {item.severity_level}
+                      <span className="text-[10px] font-mono font-bold uppercase text-cyan-600 dark:text-cyan-400">
+                        {t.urgencyLabels[item.severity_level] ||
+                          item.severity_level}
                       </span>
-                      <span className="text-[10px] font-mono text-slate-400">
+                      <span className="text-[10px] font-mono opacity-60">
                         {item.incident_category}
                       </span>
                     </div>
-                    <div className="text-sm font-bold text-white">{item.incident_title}</div>
-                    <p className="text-xs text-slate-400 line-clamp-2">{item.executive_summary}</p>
-                    <div className="text-[10px] font-mono text-cyan-400 pt-1">
-                      📍 {item.location_status.detected_location} → Open Evidence Matrix
+                    <div className="text-sm font-bold">
+                      {item.incident_title}
                     </div>
-                  </div>
+                    <p className="text-xs opacity-75 line-clamp-2">
+                      {item.urgency_rationale}
+                    </p>
+                  </button>
                 ))}
               </div>
             )}
@@ -389,32 +531,38 @@ export default function ResQvantaApp() {
         )}
       </main>
 
-      {/* 4. Footer */}
-      <footer className="relative z-10 border-t border-slate-800/60 bg-[#04070f]/90 backdrop-blur-md py-3 px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-slate-400">
+      {/* 4. Mobile & Desktop Minimal Footer */}
+      <footer
+        className={`relative z-10 py-3 px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs backdrop-blur-sm ${
+          isLight
+            ? "bg-white/50 text-slate-600"
+            : "bg-[#04070f]/50 text-slate-400"
+        }`}
+      >
         <div>
-          ResQvanta AI — From Chaos to Action · Powered by Google Gemini 3.8 Flash
+          ResQvanta AI — {t.brandSubtitle} · {GEMINI_MODEL_ID}
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4 font-medium">
           <button
             type="button"
             onClick={() => setViewMode("hero")}
-            className="hover:text-cyan-400 cursor-pointer"
+            className="hover:underline cursor-pointer"
           >
-            1. Showroom Intro
+            {t.navShowroom}
           </button>
           <button
             type="button"
             onClick={() => setViewMode("workspace")}
-            className="hover:text-cyan-400 cursor-pointer"
+            className="hover:underline cursor-pointer"
           >
-            2. Incident Workspace
+            {t.navWorkspace}
           </button>
           <button
             type="button"
             onClick={() => setViewMode("radar")}
-            className="hover:text-cyan-400 cursor-pointer"
+            className="hover:underline cursor-pointer"
           >
-            3. Session History ({incidentFeed.length})
+            {t.navHistory} ({incidentFeed.length})
           </button>
         </div>
       </footer>

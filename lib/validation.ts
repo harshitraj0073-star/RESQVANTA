@@ -39,13 +39,15 @@ export const TriageReportSchema = z.object({
     missing_critical_info: z.array(z.string()),
   }),
   evidence_trace: z.array(EvidenceTraceItemSchema),
-  immediate_actions: z.array(
-    z.object({
-      step_number: z.number(),
-      instruction: z.string(),
-      rationale: z.string(),
-    })
-  ),
+  immediate_actions: z
+    .array(
+      z.object({
+        step_number: z.number(),
+        instruction: z.string(),
+        rationale: z.string(),
+      })
+    )
+    .max(3),
   critical_warnings: z.array(z.string()),
   recommended_authorities: z.array(
     z.object({
@@ -55,8 +57,15 @@ export const TriageReportSchema = z.object({
     })
   ),
   dispatch_packet_text: z.string().min(1),
+  limitations: z.array(z.string()).optional(),
+  response_language: z.enum(['en-IN', 'hi-IN', 'mr-IN', 'gu-IN']).optional(),
+  model_used: z.string().optional(),
 });
 
 export function validateTriageReport(data: unknown): TriageReport {
-  return TriageReportSchema.parse(data) as TriageReport;
+  const raw = data as any;
+  if (Array.isArray(raw?.immediate_actions) && raw.immediate_actions.length > 3) {
+    raw.immediate_actions = raw.immediate_actions.slice(0, 3);
+  }
+  return TriageReportSchema.parse(raw) as TriageReport;
 }

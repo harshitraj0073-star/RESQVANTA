@@ -1,26 +1,63 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+:root,
+html[data-theme="light"] {
+  --bg-primary: #f6f8fb;
+  --bg-elevated: rgba(255, 255, 255, 0.72);
+  --bg-scrim: rgba(248, 250, 252, 0.62);
+  --bg-input: rgba(255, 255, 255, 0.88);
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --accent-cyan: #0891b2;
+  --accent-gold: #d97706;
+  --divider-subtle: rgba(15, 23, 42, 0.08);
+  --focus-ring: #0891b2;
+}
+
+html[data-theme="dark"] {
+  --bg-primary: #04070f;
+  --bg-elevated: rgba(10, 15, 28, 0.64);
+  --bg-scrim: rgba(6, 10, 20, 0.56);
+  --bg-input: rgba(11, 17, 31, 0.82);
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --accent-cyan: #22d3ee;
+  --accent-gold: #f59e0b;
+  --divider-subtle: rgba(248, 250, 252, 0.08);
+  --focus-ring: #22d3ee;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-background: var(--bg-primary);
+  --color-foreground: var(--text-primary);
+  --font-sans: var(--font-geist-sans), "Noto Sans Devanagari", "Noto Sans Gujarati",
+    "Kohinoor Devanagari", "Kohinoor Gujarati", "Shree Devanagari 714", system-ui,
+    -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Accessible focus ring preserved everywhere */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

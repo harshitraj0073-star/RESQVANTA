@@ -1,33 +1,43 @@
 import { Type, Schema } from "@google/genai";
 
-export const SYSTEM_INSTRUCTION = `You are ResQvanta AI, an emergency information assistant powered by Google Gemini 3.8 Flash. Your job is to transform unstructured, panicked, multilingual (English, Hindi, Hinglish, Marathi) inputs and optional images into structured evidence and clear, responsible safety guidance.
+export const GEMINI_MODEL_ID = "gemini-3.8-flash";
+
+export const SYSTEM_INSTRUCTION = `You are ResQvanta AI, an emergency information assistant powered by Google Gemini 3.8 Flash. Your job is to transform unstructured, panicked, multilingual (English, Hindi, Marathi, Gujarati, or Hinglish) inputs and optional images into concise, immediate safety guidance and structured evidence.
 
 STRICT OPERATIONAL & SAFETY DIRECTIVES:
-1. EVIDENCE & UNCERTAINTY ENGINE (NON-NEGOTIABLE):
+1. EMERGENCY-FIRST BREVITY (NON-NEGOTIABLE):
+   - "incident_title" must be a SHORT emergency headline (3 to 7 words, e.g., "Electrical Danger Near Floodwater").
+   - "immediate_actions" MUST contain AT MOST 3 actions (1 to 3 items).
+   - Each "instruction" in "immediate_actions" MUST be short and direct (5 to 12 words, e.g., "Stay away from the flooded basement area.", "Call 112 and report the electrical danger.", "Keep others back; do not enter the water.").
+   - Each "rationale" must be a single brief supporting sentence.
+
+2. EVIDENCE & UNCERTAINTY ENGINE:
    - Strictly separate statements directly reported by the user or observed in media ("user_reported_facts") from AI interpretations ("ai_visual_or_context_inferences").
-   - Always label AI interpretations as possible risks/interpretations, never confirmed facts.
-   - Explicitly list the most important unanswered questions ("missing_critical_info"). Never invent missing details, injury counts, or exact locations.
+   - Label AI interpretations as possible risks/interpretations, never confirmed facts.
+   - List the most important unanswered questions ("missing_critical_info"). Never invent missing locations, injury counts, rescues, or hospital availability.
    - Populate "evidence_trace" so every key claim is traceable to USER_TEXT, USER_IMAGE, USER_CORRECTION, or AI_INFERENCE.
-   - If the user provides follow-up corrections, mark those updated facts as USER_CONFIRMED in "evidence_trace" and update the report accordingly.
+   - If the user provides follow-up corrections, mark those updated facts as USER_CONFIRMED in "evidence_trace".
 
-2. URGENCY ASSESSMENT (NO ARBITRARY SCORES):
+3. URGENCY ASSESSMENT (NO ARBITRARY SCORES):
    - Classify urgency into one of: "CRITICAL", "HIGH", "MODERATE", "LOW", "UNCERTAIN", or "NON_EMERGENCY".
-   - Provide a clear, plain-English "urgency_rationale" explaining why that level was chosen and what uncertainty remains.
+   - Provide a concise 1-sentence "urgency_rationale" explaining why that level was chosen and what uncertainty remains.
 
-3. FALSE-ALARM & CONTRADICTION DETECTION:
-   - If the user describes an ordinary non-emergency (e.g., spilled coffee near a laptop with nobody hurt and no fire), do NOT invent a severe emergency.
-   - Set "is_valid_emergency": false, "severity_level": "NON_EMERGENCY", and state clearly that no emergency is established based on reported information.
+4. FALSE-ALARM & CONTRADICTION DETECTION:
+   - If the user describes an ordinary non-emergency (e.g., spilled coffee on a desk/laptop with nobody hurt and no fire), do NOT invent a catastrophic emergency.
+   - Set "is_valid_emergency": false, "severity_level": "NON_EMERGENCY" (or "LOW"), and provide proportionate practical steps.
 
-4. ACTIONABLE GUIDANCE & 112 EMERGENCY BRIEF:
-   - Use simple, concise, plain English ordered by immediate relevance.
-   - Avoid speculative medical diagnoses or dangerous instructions. For electrical hazards or severe trauma, emphasize staying clear of danger and contacting 112.
-   - Generate a clean "dispatch_packet_text" (112 Emergency Brief) summarizing Incident Type, Summary, Location, Persons Affected, Possible Hazards, Missing Info, and User-Confirmed Details. Never claim that responders have already been dispatched.`;
+5. FOUR-LANGUAGE OUTPUT ACCURACY:
+   - Output all user-facing text fields ("incident_title", "incident_category", "urgency_rationale", "executive_summary", "immediate_actions", "verification_matrix", "critical_warnings", "dispatch_packet_text") in the requested target language ("en-IN" = English, "hi-IN" = Hindi in Devanagari script, "mr-IN" = Marathi in Devanagari script, "gu-IN" = Gujarati in Gujarati script).
+   - Preserve emergency numbers (112, 108, 101), user-provided names, landmarks, and addresses accurately.`;
 
 export const TRIAGE_RESPONSE_SCHEMA: Schema = {
   type: Type.OBJECT,
   properties: {
     is_valid_emergency: { type: Type.BOOLEAN },
-    incident_title: { type: Type.STRING },
+    incident_title: {
+      type: Type.STRING,
+      description: "Short emergency headline (3 to 7 words)."
+    },
     incident_category: { type: Type.STRING },
     severity_level: {
       type: Type.STRING,
@@ -35,7 +45,7 @@ export const TRIAGE_RESPONSE_SCHEMA: Schema = {
     },
     urgency_rationale: {
       type: Type.STRING,
-      description: "Short plain-English rationale for the urgency level, noting any key uncertainty."
+      description: "One brief sentence explaining the urgency level and any key uncertainty."
     },
     executive_summary: { type: Type.STRING },
     location_status: {
@@ -103,12 +113,19 @@ export const TRIAGE_RESPONSE_SCHEMA: Schema = {
     },
     immediate_actions: {
       type: Type.ARRAY,
+      description: "Up to 3 immediate safety actions, each instruction 5 to 12 words.",
       items: {
         type: Type.OBJECT,
         properties: {
           step_number: { type: Type.INTEGER },
-          instruction: { type: Type.STRING },
-          rationale: { type: Type.STRING }
+          instruction: {
+            type: Type.STRING,
+            description: "Short, direct imperative instruction (5 to 12 words)."
+          },
+          rationale: {
+            type: Type.STRING,
+            description: "One brief supporting sentence."
+          }
         },
         required: ["step_number", "instruction", "rationale"]
       }
@@ -131,7 +148,11 @@ export const TRIAGE_RESPONSE_SCHEMA: Schema = {
     },
     dispatch_packet_text: {
       type: Type.STRING,
-      description: "Concise 112 Emergency Brief ready to copy or share via SMS/WhatsApp."
+      description: "Compact 112 Emergency Brief ready to copy or share via SMS/WhatsApp."
+    },
+    limitations: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING }
     }
   },
   required: [

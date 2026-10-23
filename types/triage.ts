@@ -47,4 +47,7 @@ export interface TriageReport {
     reason: string;
   }[];
   dispatch_packet_text: string;
+  limitations?: string[];
+  response_language?: 'en-IN' | 'hi-IN' | 'mr-IN' | 'gu-IN';
+  model_used?: string;
 }

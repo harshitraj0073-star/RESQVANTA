@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { validateTriageReport } from '../lib/validation';
 import { DEMO_PRESETS } from '../lib/presets';
+import { SUPPORTED_LANGUAGES, UI_TRANSLATIONS } from '../lib/translations';
 
 test('DEMO_PRESETS contain all 3 required fictional test scenarios', () => {
   assert.equal(DEMO_PRESETS.length, 3);
@@ -11,81 +12,92 @@ test('DEMO_PRESETS contain all 3 required fictional test scenarios', () => {
   assert.ok(ids.includes('coffee-spill'));
 });
 
-test('validateTriageReport accepts valid structured Gemini 3.8 Flash output with Evidence Trace', () => {
+test('SUPPORTED_LANGUAGES includes all 4 required Indian languages with complete UI translations', () => {
+  const codes = SUPPORTED_LANGUAGES.map((l) => l.code);
+  assert.deepEqual(codes, ['en-IN', 'hi-IN', 'mr-IN', 'gu-IN']);
+  for (const code of codes) {
+    assert.ok(UI_TRANSLATIONS[code].call112.length > 0);
+    assert.ok(UI_TRANSLATIONS[code].whatToDoNowHeading.length > 0);
+  }
+});
+
+test('validateTriageReport enforces max 3 immediate actions and validates schema', () => {
   const sample: unknown = {
     is_valid_emergency: true,
-    incident_title: 'Basement Flooding and Sparking Electrical Meter',
-    incident_category: 'Flooding / Electrical Hazard',
+    incident_title: 'Electrical Danger Near Floodwater',
+    incident_category: 'Electrical & Flood Hazard',
     severity_level: 'CRITICAL',
     urgency_rationale:
-      'Combination of rising water in an enclosed basement and active electrical sparks presents an immediate electrocution hazard, with one elderly person possibly inside.',
+      'Active electrical sparking near rising basement floodwater poses an immediate electrocution risk.',
     executive_summary:
-      'User reports basement flooding and sparks coming from an electric meter, with an elderly person possibly inside.',
+      'User reported flooded basement and sparking meter with an elderly person possibly inside.',
     location_status: {
-      detected_location: 'Apartment basement (exact address not provided)',
+      detected_location: 'Apartment basement (exact address unconfirmed)',
       is_location_precise: false,
     },
     people_affected: {
-      reported_summary: 'One elderly person possibly inside basement',
-      uncertainty: 'User stated "ho sakta hai" (may be inside); presence is unconfirmed.',
+      reported_summary: 'One elderly person possibly inside',
+      uncertainty: 'Presence is unconfirmed by the user.',
     },
     verification_matrix: {
       user_reported_facts: [
-        'Water has filled the apartment basement',
+        'Water has entered the basement',
         'Sparks are coming from the electric meter',
-        'An elderly person may be inside',
       ],
       ai_visual_or_context_inferences: [
-        'Possible electrocution risk if standing water contacts live electrical components',
+        'High risk of electrical current conducting through standing water',
       ],
       missing_critical_info: [
-        'Exact apartment building name and street address',
-        'Confirmation of whether the elderly person is inside the basement',
+        'Exact building address and landmark',
+        'Whether the elderly person is confirmed inside',
       ],
     },
     evidence_trace: [
       {
-        claim: 'Water in apartment basement and sparking meter',
+        claim: 'Flooded basement and sparking meter',
         source_type: 'USER_TEXT',
         supporting_quote_or_observation:
-          'Apartment ke basement mein paani bhar gaya hai aur electric meter se sparks aa rahe hain.',
+          'Basement mein paani bhar gaya hai aur meter se sparks aa rahe hain.',
         verification_status: 'USER_REPORTED',
-      },
-      {
-        claim: 'Elderly person possibly inside',
-        source_type: 'USER_TEXT',
-        supporting_quote_or_observation: 'Ek elderly person andar ho sakta hai.',
-        verification_status: 'USER_REPORTED',
-        uncertainty_note: 'Reported as uncertain by user.',
       },
     ],
     immediate_actions: [
       {
         step_number: 1,
-        instruction: 'Call 112 immediately and report flooding with an active electrical hazard.',
-        rationale: 'Professional responders and power utility isolation are required.',
+        instruction: 'Stay away from the flooded basement area.',
+        rationale: 'Standing water near sparks may carry lethal voltage.',
       },
       {
         step_number: 2,
-        instruction: 'Do not enter the flooded basement or touch standing water.',
-        rationale: 'Sparking electrical equipment can energize water and cause fatal shock.',
+        instruction: 'Call 112 and report the electrical danger.',
+        rationale: 'Professional rescue and utility shutoff are needed.',
+      },
+      {
+        step_number: 3,
+        instruction: 'Keep others away; do not enter to attempt rescue.',
+        rationale: 'Entering energized water risks additional casualties.',
+      },
+      {
+        step_number: 4,
+        instruction: 'Extra fourth step that should be trimmed.',
+        rationale: 'Should be capped at 3.',
       },
     ],
-    critical_warnings: [
-      'Do not step into flooded areas near electrical meters or wiring.',
-    ],
+    critical_warnings: ['Do not touch wet walls or metal railings.'],
     recommended_authorities: [
       {
-        name: 'National Emergency Services',
+        name: 'Emergency Services',
         number: '112',
-        reason: 'Immediate fire, rescue, and medical coordination',
+        reason: 'Fire, rescue, and medical response',
       },
     ],
     dispatch_packet_text:
-      '[112 EMERGENCY BRIEF] Type: Flood & Electrical Hazard | Summary: Apartment basement flooded with sparking electric meter. 1 elderly person possibly inside (unconfirmed). Location: Apartment basement (exact address pending).',
+      '[112 BRIEF] Electrical Danger Near Floodwater. 1 elderly person possibly inside.',
+    response_language: 'en-IN',
+    model_used: 'gemini-3.8-flash',
   };
 
   const validated = validateTriageReport(sample);
   assert.equal(validated.severity_level, 'CRITICAL');
-  assert.equal(validated.evidence_trace.length, 2);
+  assert.equal(validated.immediate_actions.length, 3);
 });

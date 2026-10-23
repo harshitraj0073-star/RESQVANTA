@@ -1,124 +1,237 @@
 "use client";
 
 import React from "react";
-import { ShieldAlert, PhoneCall, Eye, Layers, Compass, Radio } from "lucide-react";
+import {
+  ShieldAlert,
+  PhoneCall,
+  Eye,
+  Layers,
+  Sun,
+  Moon,
+  Globe,
+} from "lucide-react";
+import {
+  SUPPORTED_LANGUAGES,
+  SupportedLanguage,
+  UIStrings,
+} from "@/lib/translations";
+import { GEMINI_MODEL_ID } from "@/lib/geminiSchema";
 
 interface TopNavProps {
+  theme: "light" | "dark";
+  onToggleTheme: () => void;
   is3DMode: boolean;
   onToggle3D: () => void;
-  language: string;
-  onLanguageChange: (lang: string) => void;
-  gpsActive: boolean;
+  language: SupportedLanguage;
+  onLanguageChange: (lang: SupportedLanguage) => void;
   viewMode: "hero" | "workspace" | "radar";
   onViewModeChange: (mode: "hero" | "workspace" | "radar") => void;
+  t: UIStrings;
+  historyCount: number;
 }
 
 export function TopNav({
+  theme,
+  onToggleTheme,
   is3DMode,
   onToggle3D,
   language,
   onLanguageChange,
   viewMode,
   onViewModeChange,
+  t,
+  historyCount,
 }: TopNavProps) {
+  const isLight = theme === "light";
+
   return (
-    <header className="h-16 border-b border-slate-800/80 bg-[#050811]/85 backdrop-blur-xl px-4 md:px-8 flex items-center justify-between sticky top-0 z-50">
+    <header
+      className={`h-16 px-4 md:px-8 flex items-center justify-between sticky top-0 z-50 backdrop-blur-md transition-colors ${
+        isLight
+          ? "bg-white/65 border-b border-slate-900/5 text-slate-900"
+          : "bg-[#04070f]/65 border-b border-white/5 text-slate-100"
+      }`}
+    >
       {/* Brand */}
-      <div
+      <button
+        type="button"
         onClick={() => onViewModeChange("hero")}
-        className="flex items-center space-x-3 cursor-pointer group"
+        className="flex items-center space-x-3 cursor-pointer text-left group"
       >
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-slate-800 flex items-center justify-center shadow-lg shadow-cyan-500/15 border border-cyan-400/40 group-hover:scale-105 transition">
-          <ShieldAlert className="w-5 h-5 text-white" />
+        <div
+          className={`w-9 h-9 rounded-xl flex items-center justify-center transition group-hover:scale-105 ${
+            isLight
+              ? "bg-cyan-600 text-white shadow-sm"
+              : "bg-cyan-500/20 text-cyan-300"
+          }`}
+        >
+          <ShieldAlert className="w-5 h-5" />
         </div>
         <div>
           <div className="flex items-center space-x-2">
-            <span className="font-extrabold tracking-tight text-white text-base">
-              ResQvanta <span className="text-cyan-400 text-xs font-mono font-normal">AI</span>
+            <span className="font-extrabold tracking-tight text-base">
+              ResQvanta{" "}
+              <span
+                className={`text-xs font-mono font-semibold ${
+                  isLight ? "text-cyan-700" : "text-cyan-400"
+                }`}
+              >
+                AI
+              </span>
             </span>
-            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 hidden sm:flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
-              Powered by Google Gemini 3.8 Flash
+            <span
+              className={`text-[10px] font-mono px-2 py-0.5 rounded-full hidden sm:inline-flex items-center gap-1.5 ${
+                isLight
+                  ? "bg-cyan-500/10 text-cyan-800"
+                  : "bg-cyan-500/10 text-cyan-300"
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
+              {GEMINI_MODEL_ID}
             </span>
           </div>
-          <p className="text-[10px] text-slate-400 hidden md:block">
-            From Chaos to Action · Universal Emergency Information Assistant
+          <p
+            className={`text-[10px] hidden md:block ${
+              isLight ? "text-slate-500" : "text-slate-400"
+            }`}
+          >
+            {t.brandSubtitle}
           </p>
         </div>
-      </div>
+      </button>
 
-      {/* Center View Mode Switcher */}
-      <nav aria-label="View Switcher" className="hidden lg:flex items-center bg-slate-900/90 border border-slate-800 p-1 rounded-xl space-x-1">
-        <button
-          onClick={() => onViewModeChange("hero")}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
-            viewMode === "hero"
-              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
-              : "text-slate-400 hover:text-white"
-          }`}
-        >
-          1. Showroom Intro
-        </button>
-        <button
-          onClick={() => onViewModeChange("workspace")}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-            viewMode === "workspace"
-              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
-              : "text-slate-400 hover:text-white"
-          }`}
-        >
-          <Compass className="w-3.5 h-3.5" />
-          <span>2. Incident Workspace</span>
-        </button>
-        <button
-          onClick={() => onViewModeChange("radar")}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-            viewMode === "radar"
-              ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-              : "text-slate-400 hover:text-white"
-          }`}
-        >
-          <Radio className="w-3.5 h-3.5" />
-          <span>3. Session History</span>
-        </button>
+      {/* Center Minimal Floating Navigation */}
+      <nav
+        aria-label="Primary View Navigation"
+        className="hidden lg:flex items-center space-x-1"
+      >
+        {(
+          [
+            { id: "hero", label: t.navShowroom },
+            { id: "workspace", label: t.navWorkspace },
+            {
+              id: "radar",
+              label:
+                historyCount > 0
+                  ? `${t.navHistory} (${historyCount})`
+                  : t.navHistory,
+            },
+          ] as const
+        ).map((tab) => {
+          const active = viewMode === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => onViewModeChange(tab.id)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition cursor-pointer ${
+                active
+                  ? isLight
+                    ? "bg-slate-900 text-white font-semibold"
+                    : "bg-cyan-500/20 text-cyan-300 font-semibold"
+                  : isLight
+                  ? "text-slate-600 hover:text-slate-950"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </nav>
 
-      {/* Action Badges & Always-Visible 112 Call Option */}
-      <div className="flex items-center space-x-2 md:space-x-2.5">
-        {/* Language Selector */}
-        <select
-          value={language}
-          onChange={(e) => onLanguageChange(e.target.value)}
-          aria-label="Select Output Language"
-          className="bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-300 px-2.5 py-1.5 focus:outline-none focus:border-cyan-500 transition cursor-pointer"
-        >
-          <option value="English">English</option>
-          <option value="Hindi">हिंदी (Hindi)</option>
-          <option value="Marathi">मराठी (Marathi)</option>
-        </select>
+      {/* Right Controls: 4-Language Selector, Light/Dark Toggle, 3D/2D Toggle, Call 112 */}
+      <div className="flex items-center space-x-2">
+        {/* 4-Language Selector */}
+        <div className="relative flex items-center">
+          <Globe
+            className={`w-3.5 h-3.5 absolute left-2.5 pointer-events-none ${
+              isLight ? "text-slate-500" : "text-slate-400"
+            }`}
+          />
+          <select
+            value={language}
+            onChange={(e) =>
+              onLanguageChange(e.target.value as SupportedLanguage)
+            }
+            aria-label="Select Language (English, Hindi, Marathi, Gujarati)"
+            className={`pl-7 pr-2.5 py-1.5 rounded-full text-xs font-medium transition cursor-pointer focus:outline-none ${
+              isLight
+                ? "bg-slate-200/70 text-slate-900 hover:bg-slate-200"
+                : "bg-slate-900/70 text-slate-200 hover:bg-slate-800"
+            }`}
+          >
+            {SUPPORTED_LANGUAGES.map((lang) => (
+              <option
+                key={lang.code}
+                value={lang.code}
+                className={
+                  isLight ? "bg-white text-slate-900" : "bg-slate-950 text-white"
+                }
+              >
+                {lang.nativeName}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        {/* 3D / 2D Lite Mode Toggle */}
+        {/* Light / Dark Mode Toggle */}
         <button
-          onClick={onToggle3D}
-          className={`flex items-center space-x-1 text-xs px-2.5 py-1.5 rounded-lg border transition cursor-pointer ${
-            is3DMode
-              ? "bg-slate-900 text-cyan-300 border-cyan-500/30 hover:bg-slate-800"
-              : "bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700"
+          type="button"
+          onClick={onToggleTheme}
+          aria-label={
+            isLight ? "Switch to Dark Mode" : "Switch to Light Mode"
+          }
+          title={isLight ? "Switch to Dark Mode" : "Switch to Light Mode"}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition cursor-pointer ${
+            isLight
+              ? "bg-slate-200/70 text-slate-900 hover:bg-slate-200"
+              : "bg-slate-900/70 text-amber-300 hover:bg-slate-800"
           }`}
-          title="Switch between 3D Core and Lightweight 2D Mode"
         >
-          {is3DMode ? <Layers className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-          <span className="hidden md:inline">{is3DMode ? "3D View" : "2D Lite"}</span>
+          {isLight ? (
+            <>
+              <Moon className="w-3.5 h-3.5 text-slate-700" />
+              <span className="hidden sm:inline">{t.themeDark}</span>
+            </>
+          ) : (
+            <>
+              <Sun className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">{t.themeLight}</span>
+            </>
+          )}
         </button>
 
-        {/* Always-Visible Emergency Call 112 CTA */}
+        {/* 3D / 2D Lite Toggle */}
+        <button
+          type="button"
+          onClick={onToggle3D}
+          aria-label="Toggle 3D background"
+          title="Toggle 3D Core vs 2D Lite Mode"
+          className={`hidden sm:flex items-center space-x-1 text-xs px-3 py-1.5 rounded-full transition cursor-pointer ${
+            isLight
+              ? "bg-slate-200/70 text-slate-700 hover:bg-slate-200"
+              : "bg-slate-900/70 text-slate-300 hover:bg-slate-800"
+          }`}
+        >
+          {is3DMode ? (
+            <Layers className="w-3.5 h-3.5" />
+          ) : (
+            <Eye className="w-3.5 h-3.5" />
+          )}
+          <span className="hidden md:inline">
+            {is3DMode ? t.view3D : t.view2D}
+          </span>
+        </button>
+
+        {/* Always-Visible Call 112 Emergency Button */}
         <a
           href="tel:112"
-          aria-label="Call 112 National Emergency Number immediately"
-          className="flex items-center space-x-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-lg shadow-red-600/30 border border-red-400 transition transform active:scale-95"
+          aria-label="Call 112 National Emergency Services"
+          className="flex items-center space-x-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-sm transition transform active:scale-95"
         >
           <PhoneCall className="w-3.5 h-3.5" />
-          <span>Call 112</span>
+          <span>{t.call112}</span>
         </a>
       </div>
     </header>

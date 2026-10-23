@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { PRESET_SCENARIOS, PresetScenario } from "@/lib/presets";
+import { SupportedLanguage, UIStrings } from "@/lib/translations";
 import {
   UploadCloud,
   Mic,
@@ -11,8 +12,17 @@ import {
   Sparkles,
   Loader2,
   Trash2,
-  PhoneCall
+  PhoneCall,
 } from "lucide-react";
+
+type VoiceStatus =
+  | "ready"
+  | "requesting"
+  | "listening"
+  | "transcribed"
+  | "denied"
+  | "failed"
+  | "unsupported";
 
 interface InputConsoleProps {
   onAnalyze: (payload: {
@@ -24,18 +34,44 @@ interface InputConsoleProps {
   }) => void;
   isLoading: boolean;
   onGpsChange: (hasGps: boolean) => void;
+  language: SupportedLanguage;
+  theme: "light" | "dark";
+  t: UIStrings;
 }
 
-export function InputConsole({ onAnalyze, isLoading, onGpsChange }: InputConsoleProps) {
+export function InputConsole({
+  onAnalyze,
+  isLoading,
+  onGpsChange,
+  language,
+  theme,
+  t,
+}: InputConsoleProps) {
   const [inputText, setInputText] = useState("");
   const [manualLocation, setManualLocation] = useState("");
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [imageMimeType, setImageMimeType] = useState<string | null>(null);
   const [gpsCoords, setGpsCoords] = useState<string | null>(null);
   const [gpsNotice, setGpsNotice] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState<VoiceStatus>("ready");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const isLight = theme === "light";
+
+  // Clean up microphone if component unmounts or language changes
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {
+          // ignore
+        }
+      }
+    };
+  }, []);
 
   const handleSelectPreset = (p: PresetScenario) => {
     setInputText(p.text);
@@ -43,19 +79,27 @@ export function InputConsole({ onAnalyze, isLoading, onGpsChange }: InputConsole
   };
 
   const handleClearAll = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        // ignore
+      }
+    }
     setInputText("");
     setManualLocation("");
     setImageBase64(null);
     setImageMimeType(null);
     setGpsCoords(null);
     setGpsNotice(null);
+    setVoiceStatus("ready");
     setErrorMessage(null);
     onGpsChange(false);
   };
 
   const handleImageUpload = (file: File) => {
     if (!file.type.startsWith("image/")) {
-      setErrorMessage("Invalid file type. Please choose a JPEG, PNG, or WebP photo.");
+      setErrorMessage("Please select a valid JPEG, PNG, or WebP image.");
       return;
     }
     setErrorMessage(null);
@@ -87,55 +131,95 @@ export function InputConsole({ onAnalyze, isLoading, onGpsChange }: InputConsole
         setImageMimeType(file.type);
       };
       img.onerror = () => {
-        setErrorMessage("Could not read this image file. Please try another photo.");
+        setErrorMessage("Could not process image file. Please try another photo.");
       };
       img.src = e.target?.result as string;
     };
     reader.readAsDataURL(file);
   };
 
+  // Explicit Web Speech API Voice Recognition with 4-Language Locale Binding
   const toggleSpeechRecognition = () => {
-    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-      setErrorMessage(
-        "Voice transcription is not supported in this browser. Please type your description below."
-      );
+    if (typeof window === "undefined") return;
+
+    const SpeechRec =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRec) {
+      setVoiceStatus("unsupported");
       return;
     }
 
-    const SpeechRec =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const recognition = new SpeechRec();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = "en-IN";
+    if (voiceStatus === "listening" || voiceStatus === "requesting") {
+      try {
+        recognitionRef.current?.stop();
+      } catch {
+        // ignore
+      }
+      setVoiceStatus("ready");
+      return;
+    }
 
-    if (!isRecording) {
+    try {
       setErrorMessage(null);
-      recognition.start();
-      setIsRecording(true);
+      setVoiceStatus("requesting");
+
+      const recognition = new SpeechRec();
+      recognitionRef.current = recognition;
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      // Bind directly to selected Indian locale: en-IN, hi-IN, mr-IN, gu-IN
+      recognition.lang = language;
+
+      recognition.onstart = () => {
+        setVoiceStatus("listening");
+      };
+
       recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInputText((prev) => (prev ? `${prev} ${transcript}` : transcript));
-        setIsRecording(false);
+        const transcript = event.results?.[0]?.[0]?.transcript;
+        if (transcript) {
+          setInputText((prev) =>
+            prev.trim() ? `${prev.trim()} ${transcript}` : transcript
+          );
+          setVoiceStatus("transcribed");
+        } else {
+          setVoiceStatus("failed");
+        }
       };
-      recognition.onerror = () => {
-        setIsRecording(false);
-        setErrorMessage("Microphone permission denied or speech not recognized.");
+
+      recognition.onerror = (event: any) => {
+        const err = event?.error;
+        if (err === "not-allowed" || err === "service-not-allowed") {
+          setVoiceStatus("denied");
+        } else if (err === "language-not-supported") {
+          setVoiceStatus("unsupported");
+        } else {
+          setVoiceStatus("failed");
+        }
       };
-      recognition.onend = () => setIsRecording(false);
-    } else {
-      recognition.stop();
-      setIsRecording(false);
+
+      recognition.onend = () => {
+        setVoiceStatus((current) =>
+          current === "listening" || current === "requesting"
+            ? "ready"
+            : current
+        );
+      };
+
+      recognition.start();
+    } catch {
+      setVoiceStatus("failed");
     }
   };
 
   const shareBrowserLocation = () => {
     if (!navigator.geolocation) {
-      setGpsNotice("Browser location sharing is not supported. Please type your location manually.");
+      setGpsNotice("Browser geolocation is not supported on this device.");
       return;
     }
 
-    setGpsNotice("Requesting browser permission for location...");
+    setGpsNotice("Requesting location permission...");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const coords = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
@@ -146,7 +230,7 @@ export function InputConsole({ onAnalyze, isLoading, onGpsChange }: InputConsole
       () => {
         setGpsCoords(null);
         setGpsNotice(
-          "Location permission was declined or unavailable. Please type your landmark or address manually below."
+          "Location permission declined. Please type your landmark or address manually."
         );
         onGpsChange(false);
       },
@@ -156,8 +240,9 @@ export function InputConsole({ onAnalyze, isLoading, onGpsChange }: InputConsole
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     if (!inputText.trim() && !imageBase64) {
-      setErrorMessage("Please describe what is happening or attach a photo before analyzing.");
+      setErrorMessage("Please enter a description or attach a photo first.");
       return;
     }
     setErrorMessage(null);
@@ -166,245 +251,358 @@ export function InputConsole({ onAnalyze, isLoading, onGpsChange }: InputConsole
       imageBase64,
       imageMimeType,
       gpsCoords,
-      manualLocation: manualLocation.trim()
+      manualLocation: manualLocation.trim(),
     });
   };
 
   return (
-    <div className="bg-[#090d16]/90 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-5 md:p-6 shadow-2xl flex flex-col justify-between">
-      <div>
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-base font-bold text-white tracking-tight">
-              Describe the Situation
-            </h2>
-            <p className="text-xs text-slate-400">
-              Type in English, Hindi, or Hinglish, use voice, or attach a photo
-            </p>
+    <section
+      aria-label={t.inputHeading}
+      className={`rounded-3xl p-5 md:p-7 backdrop-blur-md transition-colors space-y-5 ${
+        isLight
+          ? "bg-white/70 text-slate-900 shadow-lg shadow-slate-900/5"
+          : "bg-[#080d1a]/65 text-slate-100"
+      }`}
+    >
+      {/* Floating Header */}
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h2 className="text-lg font-bold tracking-tight">{t.inputHeading}</h2>
+          <p
+            className={`text-xs mt-0.5 ${
+              isLight ? "text-slate-600" : "text-slate-400"
+            }`}
+          >
+            {t.inputSubheading}
+          </p>
+        </div>
+        {(inputText || imageBase64 || manualLocation || gpsCoords) && (
+          <button
+            type="button"
+            onClick={handleClearAll}
+            className={`flex items-center gap-1 text-xs px-3 py-1 rounded-full transition cursor-pointer ${
+              isLight
+                ? "bg-slate-200/80 text-slate-700 hover:bg-red-100 hover:text-red-700"
+                : "bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-300"
+            }`}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>{t.clearBtn}</span>
+          </button>
+        )}
+      </div>
+
+      {/* Borderless Fictional Test Scenario Pills */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span
+            className={`text-[11px] font-semibold uppercase tracking-wider ${
+              isLight ? "text-slate-500" : "text-slate-400"
+            }`}
+          >
+            {t.demoSectionTitle}
+          </span>
+        </div>
+        <div className="grid grid-cols-1 gap-1.5">
+          {PRESET_SCENARIOS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => handleSelectPreset(p)}
+              className={`text-left px-3.5 py-2.5 rounded-2xl transition cursor-pointer flex items-center justify-between ${
+                isLight
+                  ? "bg-slate-100/90 hover:bg-slate-200/80 text-slate-900"
+                  : "bg-white/5 hover:bg-white/10 text-slate-100"
+              }`}
+            >
+              <div className="pr-2">
+                <div className={`text-xs font-bold ${p.accentColor}`}>
+                  {p.title}
+                </div>
+                <div
+                  className={`text-[11px] ${
+                    isLight ? "text-slate-600" : "text-slate-400"
+                  }`}
+                >
+                  {p.subtitle}
+                </div>
+              </div>
+              <span
+                className={`text-[10px] font-mono px-2.5 py-1 rounded-full shrink-0 ${
+                  isLight
+                    ? "bg-white text-slate-700 shadow-2xs"
+                    : "bg-white/10 text-cyan-300"
+                }`}
+              >
+                {t.loadScenario}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Input Form */}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Free-form Textarea + Voice Input */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <label htmlFor="incident-text" className="text-xs font-semibold">
+              {t.whatHappenedLabel}
+            </label>
+            <span
+              className={`text-[10px] font-mono ${
+                isLight ? "text-cyan-700" : "text-cyan-400"
+              }`}
+            >
+              {language}
+            </span>
           </div>
-          {(inputText || imageBase64 || manualLocation || gpsCoords) && (
+
+          <div className="relative">
+            <textarea
+              id="incident-text"
+              rows={4}
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              placeholder={t.inputPlaceholder}
+              className={`w-full rounded-2xl p-4 pb-12 text-xs leading-relaxed transition resize-none focus:outline-none ${
+                isLight
+                  ? "bg-white/90 text-slate-900 placeholder-slate-400 shadow-inner"
+                  : "bg-slate-950/75 text-slate-100 placeholder-slate-500"
+              }`}
+            />
+
+            {/* Voice Control Bar inside Textarea */}
+            <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between gap-2">
+              <div className="text-[11px] truncate">
+                {voiceStatus === "listening" && (
+                  <span className="text-red-500 font-semibold animate-pulse">
+                    ● {t.voiceListening} ({language})
+                  </span>
+                )}
+                {voiceStatus === "transcribed" && (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                    ✓ {t.voiceTranscribed}
+                  </span>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={toggleSpeechRecognition}
+                aria-label={
+                  voiceStatus === "listening" ? t.voiceStop : t.voiceReady
+                }
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition cursor-pointer shrink-0 ${
+                  voiceStatus === "listening" || voiceStatus === "requesting"
+                    ? "bg-red-600 text-white animate-pulse"
+                    : isLight
+                    ? "bg-slate-200 text-slate-800 hover:bg-slate-300"
+                    : "bg-white/10 text-slate-200 hover:bg-white/20"
+                }`}
+              >
+                {voiceStatus === "listening" ? (
+                  <>
+                    <MicOff className="w-3.5 h-3.5" />
+                    <span>{t.voiceStop}</span>
+                  </>
+                ) : (
+                  <>
+                    <Mic className="w-3.5 h-3.5" />
+                    <span>
+                      {voiceStatus === "requesting"
+                        ? t.voiceRequesting
+                        : t.voiceReady}
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Honest Voice Error / Unsupported Feedback */}
+          {(voiceStatus === "denied" ||
+            voiceStatus === "failed" ||
+            voiceStatus === "unsupported") && (
+            <div
+              role="status"
+              className={`text-[11px] px-3 py-2 rounded-xl ${
+                isLight
+                  ? "bg-amber-100/90 text-amber-900"
+                  : "bg-amber-950/40 text-amber-200"
+              }`}
+            >
+              {voiceStatus === "denied" && t.voicePermissionDenied}
+              {voiceStatus === "failed" && t.voiceFailed}
+              {voiceStatus === "unsupported" && t.voiceUnsupported}
+            </div>
+          )}
+        </div>
+
+        {/* Location Row */}
+        <div className="space-y-1.5">
+          <label htmlFor="manual-location" className="block text-xs font-semibold">
+            {t.locationLabel}
+          </label>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              id="manual-location"
+              type="text"
+              value={manualLocation}
+              onChange={(e) => setManualLocation(e.target.value)}
+              placeholder={t.locationPlaceholder}
+              className={`flex-1 rounded-2xl px-3.5 py-2.5 text-xs focus:outline-none ${
+                isLight
+                  ? "bg-white/90 text-slate-900 placeholder-slate-400 shadow-inner"
+                  : "bg-slate-950/75 text-slate-100 placeholder-slate-500"
+              }`}
+            />
             <button
               type="button"
-              onClick={handleClearAll}
-              className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-red-300 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 transition cursor-pointer"
+              onClick={shareBrowserLocation}
+              className={`px-3.5 py-2.5 rounded-2xl text-xs font-medium flex items-center justify-center gap-1.5 shrink-0 transition cursor-pointer ${
+                gpsCoords
+                  ? "bg-cyan-600 text-white"
+                  : isLight
+                  ? "bg-slate-200/80 text-slate-800 hover:bg-slate-300/80"
+                  : "bg-white/10 text-slate-200 hover:bg-white/15"
+              }`}
             >
-              <Trash2 className="w-3 h-3" />
-              <span>Clear</span>
+              <MapPin className="w-3.5 h-3.5" />
+              <span>
+                {gpsCoords ? t.locationSharedBtn : t.shareLocationBtn}
+              </span>
+            </button>
+          </div>
+
+          {gpsCoords && (
+            <div className="text-[11px] font-mono text-cyan-600 dark:text-cyan-300 flex items-center justify-between px-3 py-1">
+              <span>📍 GPS: {gpsCoords}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setGpsCoords(null);
+                  onGpsChange(false);
+                }}
+                className="underline text-[10px] cursor-pointer"
+              >
+                {t.clearBtn}
+              </button>
+            </div>
+          )}
+
+          {gpsNotice && (
+            <div className="text-[11px] text-amber-600 dark:text-amber-300 px-2">
+              {gpsNotice}
+            </div>
+          )}
+        </div>
+
+        {/* Photo Upload */}
+        <div>
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files?.[0]) handleImageUpload(e.target.files[0]);
+            }}
+          />
+
+          {imageBase64 ? (
+            <div
+              className={`rounded-2xl p-2.5 flex items-center space-x-3 ${
+                isLight ? "bg-slate-100" : "bg-white/5"
+              }`}
+            >
+              <img
+                src={imageBase64}
+                alt="Uploaded scene preview"
+                className="w-12 h-12 object-cover rounded-xl"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-semibold truncate">
+                  {t.photoReadyLabel}
+                </div>
+                <div
+                  className={`text-[10px] ${
+                    isLight ? "text-slate-500" : "text-slate-400"
+                  }`}
+                >
+                  {t.photoUncertaintyNote}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setImageBase64(null);
+                  setImageMimeType(null);
+                }}
+                aria-label="Remove photo"
+                className="p-1.5 rounded-full hover:bg-red-500/20 text-slate-400 hover:text-red-500 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className={`w-full rounded-2xl py-2.5 px-4 text-xs font-medium flex items-center justify-center gap-2 transition cursor-pointer ${
+                isLight
+                  ? "bg-slate-100/90 hover:bg-slate-200/80 text-slate-700"
+                  : "bg-white/5 hover:bg-white/10 text-slate-300"
+              }`}
+            >
+              <UploadCloud className="w-4 h-4 text-cyan-500" />
+              <span>{t.attachPhotoBtn}</span>
             </button>
           )}
         </div>
 
-        {/* Fictional Test Scenarios */}
-        <div className="mb-4 p-3 rounded-2xl bg-slate-950/70 border border-slate-800/80">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-semibold text-slate-300">
-              Judge Demo Scenarios (Fictional Test Cases):
-            </span>
-            <span className="text-[10px] font-mono text-cyan-400">LIVE GEMINI API</span>
-          </div>
-          <div className="grid grid-cols-1 gap-1.5">
-            {PRESET_SCENARIOS.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => handleSelectPreset(p)}
-                className={`text-left px-3 py-2 rounded-xl border transition cursor-pointer flex items-center justify-between ${p.badgeColor}`}
-              >
-                <div>
-                  <div className="text-xs font-bold">{p.title}</div>
-                  <div className="text-[10px] opacity-80">{p.subtitle}</div>
-                </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/30">
-                  Load
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Input Form */}
-        <form onSubmit={handleSubmit} className="space-y-3.5">
-          {/* Free-form Text Input */}
-          <div>
-            <label htmlFor="incident-text" className="block text-xs font-medium text-slate-300 mb-1">
-              What is happening? (Review before analyzing)
-            </label>
-            <div className="relative">
-              <textarea
-                id="incident-text"
-                rows={4}
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder="Example: Apartment ke basement mein paani bhar gaya hai aur electric meter se sparks aa rahe hain..."
-                className="w-full bg-slate-950/80 border border-slate-800 rounded-2xl p-3.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition resize-none leading-relaxed"
-              />
-
-              {/* Voice & Location Buttons */}
-              <div className="absolute bottom-2.5 right-2.5 flex items-center space-x-1.5">
-                <button
-                  type="button"
-                  onClick={toggleSpeechRecognition}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] transition cursor-pointer ${
-                    isRecording
-                      ? "bg-red-500/20 text-red-300 border-red-500/40 animate-pulse"
-                      : "bg-slate-900 text-slate-300 border-slate-700 hover:text-white"
-                  }`}
-                  title="Optional voice transcription"
-                >
-                  {isRecording ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
-                  <span>{isRecording ? "Listening..." : "Voice"}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Manual Location + Optional Browser Location */}
-          <div className="space-y-1.5">
-            <label htmlFor="manual-location" className="block text-xs font-medium text-slate-300">
-              Location or Landmark (Optional)
-            </label>
-            <div className="flex gap-2">
-              <input
-                id="manual-location"
-                type="text"
-                value={manualLocation}
-                onChange={(e) => setManualLocation(e.target.value)}
-                placeholder="Type street, building, floor, or highway landmark..."
-                className="flex-1 bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-              />
-              <button
-                type="button"
-                onClick={shareBrowserLocation}
-                className={`px-3 py-2 rounded-xl border text-xs font-medium flex items-center gap-1.5 shrink-0 transition cursor-pointer ${
-                  gpsCoords
-                    ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
-                    : "bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-700"
-                }`}
-              >
-                <MapPin className="w-3.5 h-3.5 text-cyan-400" />
-                <span>{gpsCoords ? "Location Shared" : "Share My Location"}</span>
-              </button>
-            </div>
-
-            {gpsCoords && (
-              <div className="text-[11px] font-mono text-cyan-300 flex items-center justify-between px-3 py-1.5 rounded-xl bg-cyan-950/30 border border-cyan-800/40">
-                <span>📍 Browser GPS: {gpsCoords}</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setGpsCoords(null);
-                    onGpsChange(false);
-                  }}
-                  className="text-slate-400 hover:text-white underline text-[10px]"
-                >
-                  Remove
-                </button>
-              </div>
-            )}
-
-            {gpsNotice && (
-              <div className="text-[11px] text-amber-300 bg-amber-950/30 border border-amber-800/40 rounded-xl px-3 py-1.5">
-                {gpsNotice}
-              </div>
-            )}
-          </div>
-
-          {/* Photo Attachment */}
-          <div>
-            <input
-              type="file"
-              ref={fileInputRef}
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files?.[0]) handleImageUpload(e.target.files[0]);
-              }}
-            />
-
-            {imageBase64 ? (
-              <div className="relative rounded-2xl border border-cyan-500/40 bg-slate-950/80 p-2.5 flex items-center space-x-3">
-                <img
-                  src={imageBase64}
-                  alt="Uploaded scene preview"
-                  className="w-14 h-14 object-cover rounded-xl border border-slate-700"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-white truncate">
-                    Photo Ready for Review
-                  </div>
-                  <div className="text-[10px] text-slate-400">
-                    Note: AI image interpretation may contain uncertainty.
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setImageBase64(null);
-                    setImageMimeType(null);
-                  }}
-                  className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-red-400 transition cursor-pointer"
-                  title="Remove photo"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full border border-dashed border-slate-800 hover:border-cyan-500/50 rounded-2xl p-3 text-center cursor-pointer bg-slate-950/40 hover:bg-cyan-950/10 transition group"
-              >
-                <div className="flex items-center justify-center space-x-2 text-slate-300 group-hover:text-cyan-300">
-                  <UploadCloud className="w-4 h-4" />
-                  <span className="text-xs font-medium">Attach Photo (Optional)</span>
-                </div>
-              </button>
-            )}
-          </div>
-
-          {/* Honest Error / Validation Banner */}
-          {errorMessage && (
-            <div
-              role="alert"
-              className="p-3 rounded-xl bg-red-950/40 border border-red-500/40 text-xs text-red-200"
-            >
-              {errorMessage}
-            </div>
-          )}
-
-          {/* Primary Submit Button */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs tracking-wide uppercase shadow-xl shadow-cyan-500/15 border border-cyan-300/40 transition transform active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 cursor-pointer"
+        {errorMessage && (
+          <div
+            role="alert"
+            className="p-3 rounded-2xl bg-red-500/15 text-red-600 dark:text-red-300 text-xs font-medium"
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
-                <span>Analyzing with Gemini 3.8 Flash...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 text-slate-950" />
-                <span>Analyze with Gemini</span>
-              </>
-            )}
-          </button>
-        </form>
-      </div>
+            {errorMessage}
+          </div>
+        )}
 
-      {/* Persistent Emergency First Footer */}
-      <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2 text-[11px] text-slate-400">
-        <span>In immediate danger? Do not wait for AI analysis.</span>
+        {/* Submit Button */}
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="w-full py-3.5 px-5 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs tracking-wide uppercase shadow-md transition transform active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 cursor-pointer"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>{t.analyzingBtn}</span>
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4" />
+              <span>{t.analyzeBtn}</span>
+            </>
+          )}
+        </button>
+      </form>
+
+      {/* Emergency First Direct Call Link */}
+      <div className="pt-2 flex items-center justify-between gap-2 text-xs">
+        <span className={isLight ? "text-slate-600" : "text-slate-400"}>
+          {t.immediateDangerNote}
+        </span>
         <a
           href="tel:112"
-          className="inline-flex items-center gap-1 text-red-400 hover:text-red-300 font-bold shrink-0"
+          className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 font-bold hover:underline shrink-0"
         >
-          <PhoneCall className="w-3 h-3" />
-          <span>Call 112 Now</span>
+          <PhoneCall className="w-3.5 h-3.5" />
+          <span>{t.call112}</span>
         </a>
       </div>
-    </div>
+    </section>
   );
 }
