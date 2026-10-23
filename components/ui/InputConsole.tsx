@@ -14,6 +14,7 @@ import {
   Trash2,
   PhoneCall,
 } from "lucide-react";
+import { ShinyButton } from "@/components/ui/ShinyButton";
 
 interface MinimalSpeechRecognition {
   continuous: boolean;
@@ -299,7 +300,7 @@ export function InputConsole({
   return (
     <section
       aria-label={t.inputHeading}
-      className="card-3d-tactile rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden"
+      className="rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden backdrop-blur-2xl bg-slate-900/40 dark:bg-[#080e1a]/60 border border-transparent hover:shadow-[0_0_35px_rgba(6,182,212,0.15)] transition-all duration-300"
     >
       {/* Top Header & Clear Draft */}
       <div className="flex items-start justify-between gap-2">
@@ -314,14 +315,14 @@ export function InputConsole({
           </p>
         </div>
         {(inputText || imageBase64 || manualLocation || gpsCoords) && (
-          <button
-            type="button"
+          <ShinyButton
+            variant="ghost"
+            size="sm"
             onClick={handleClearAll}
-            className="btn-3d-slate flex items-center gap-1.5 text-xs px-3.5 py-1.5 rounded-full cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5 text-red-400" />
             <span>{t.clearBtn}</span>
-          </button>
+          </ShinyButton>
         )}
       </div>
 
@@ -348,10 +349,10 @@ export function InputConsole({
               value={inputText}
               onChange={(e) => onInputTextChange(e.target.value)}
               placeholder={inputText ? "" : DYNAMIC_PLACEHOLDERS[placeholderIndex]}
-              className={`w-full rounded-2xl p-4 pb-14 text-xs sm:text-sm leading-relaxed backdrop-blur-md transition resize-none focus:outline-none border ${
+              className={`w-full rounded-2xl p-4 pb-14 text-xs sm:text-sm leading-relaxed backdrop-blur-xl transition resize-none focus:outline-none border border-transparent ${
                 isLight
-                  ? "bg-white/90 text-slate-950 placeholder-slate-400 border-slate-200/90 focus:border-cyan-500 shadow-inner"
-                  : "bg-[#0b1220]/90 text-white placeholder-slate-500 border-white/10 focus:border-cyan-400 shadow-inner"
+                  ? "bg-slate-100/90 text-slate-950 placeholder-slate-400 focus:bg-white shadow-inner"
+                  : "bg-slate-950/70 text-white placeholder-slate-500 focus:bg-slate-950/90 shadow-inner"
               }`}
             />
 
@@ -442,24 +443,24 @@ export function InputConsole({
               value={manualLocation}
               onChange={(e) => onManualLocationChange(e.target.value)}
               placeholder={t.locationPlaceholder}
-              className={`flex-1 rounded-2xl px-3.5 py-2.5 text-xs backdrop-blur-md focus:outline-none ${
+              className={`flex-1 rounded-2xl px-3.5 py-2.5 text-xs backdrop-blur-md focus:outline-none border border-transparent ${
                 isLight
-                  ? "bg-white/80 text-slate-950 placeholder-slate-500 shadow-sm"
-                  : "bg-slate-950/70 text-white placeholder-slate-400"
+                  ? "bg-slate-100/90 text-slate-950 placeholder-slate-500 shadow-inner"
+                  : "bg-slate-950/70 text-white placeholder-slate-400 shadow-inner"
               }`}
             />
-            <button
+            <ShinyButton
               type="button"
+              variant={gpsCoords ? "emerald" : "slate"}
+              size="sm"
               onClick={shareBrowserLocation}
-              className={`btn-3d-slate px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 shrink-0 transition cursor-pointer ${
-                gpsCoords ? "border-cyan-400 text-cyan-300" : ""
-              }`}
+              className="rounded-2xl shrink-0"
             >
               <MapPin className="w-3.5 h-3.5 text-cyan-400" />
               <span>
                 {gpsCoords ? t.locationSharedBtn : t.shareLocationBtn}
               </span>
-            </button>
+            </ShinyButton>
           </div>
 
           {gpsCoords && (
@@ -496,8 +497,8 @@ export function InputConsole({
 
           {imageBase64 ? (
             <div
-              className={`rounded-2xl p-2.5 flex items-center space-x-3 border ${
-                isLight ? "bg-white border-slate-200 shadow-md" : "bg-slate-900 border-white/10 shadow-md"
+              className={`rounded-2xl p-2.5 flex items-center space-x-3 border border-transparent ${
+                isLight ? "bg-white/80 shadow-md" : "bg-slate-900/80 shadow-md"
               }`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -528,14 +529,16 @@ export function InputConsole({
               </button>
             </div>
           ) : (
-            <button
+            <ShinyButton
               type="button"
+              variant="slate"
+              size="md"
               onClick={() => fileInputRef.current?.click()}
-              className="btn-3d-slate w-full rounded-2xl py-3 px-4 text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer"
+              className="w-full rounded-2xl py-3 px-4 text-xs font-bold flex items-center justify-center gap-2"
             >
               <UploadCloud className="w-4 h-4 text-cyan-400" />
               <span>{t.attachPhotoBtn}</span>
-            </button>
+            </ShinyButton>
           )}
         </div>
 
@@ -548,12 +551,14 @@ export function InputConsole({
           </div>
         )}
 
-        {/* Submit / Cancel Buttons */}
+        {/* Submit / Cancel Buttons using 21st.dev ShinyButton */}
         <div className="flex items-center gap-2.5">
-          <button
+          <ShinyButton
             type="submit"
             disabled={isLoading}
-            className="btn-3d-cyan flex-1 py-3.5 px-6 rounded-2xl font-extrabold text-xs tracking-wider uppercase shadow-xl transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center space-x-2 cursor-pointer"
+            variant="cyan"
+            size="lg"
+            className="flex-1 w-full font-extrabold tracking-wider uppercase shadow-xl"
           >
             {isLoading ? (
               <>
@@ -566,21 +571,23 @@ export function InputConsole({
                 <span>{t.analyzeBtn}</span>
               </>
             )}
-          </button>
+          </ShinyButton>
 
           {isLoading && (
-            <button
+            <ShinyButton
               type="button"
+              variant="red"
+              size="lg"
               onClick={onCancelAnalysis}
-              className="btn-3d-red py-3.5 px-5 rounded-2xl text-xs font-bold transition cursor-pointer shrink-0"
+              className="px-5 font-bold shrink-0"
             >
               {t.cancelAnalysisBtn}
-            </button>
+            </ShinyButton>
           )}
         </div>
       </form>
 
-      {/* 3D Extruded Scenario Chips */}
+      {/* 21st.dev Shiny Scenario Chips */}
       <div className="space-y-2 pt-1">
         <span
           className={`text-[11px] font-extrabold uppercase tracking-wider block ${
@@ -602,15 +609,17 @@ export function InputConsole({
               ? loc.title.split(":")[1].trim()
               : loc.title;
             return (
-              <button
+              <ShinyButton
                 key={p.id}
                 type="button"
+                variant="slate"
+                size="sm"
                 onClick={() => handleSelectPreset(p)}
-                className="chip-3d px-3.5 py-2 rounded-full text-xs font-bold transition cursor-pointer flex items-center gap-2 text-white"
+                className="rounded-full px-3.5 py-1.5"
               >
                 <span>{icon}</span>
                 <span className="font-semibold">{shortTitle}</span>
-              </button>
+              </ShinyButton>
             );
           })}
         </div>
@@ -621,13 +630,15 @@ export function InputConsole({
         <span className={isLight ? "text-slate-700" : "text-slate-300"}>
           {t.immediateDangerNote}
         </span>
-        <a
+        <ShinyButton
+          variant="red"
+          size="sm"
           href="tel:112"
-          className="btn-3d-red px-4 py-1.5 rounded-full inline-flex items-center gap-1.5 font-bold text-xs text-white"
+          className="font-bold text-xs"
         >
-          <PhoneCall className="w-3.5 h-3.5" />
+          <PhoneCall className="w-3.5 h-3.5 animate-pulse" />
           <span>{t.call112}</span>
-        </a>
+        </ShinyButton>
       </div>
     </section>
   );

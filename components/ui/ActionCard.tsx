@@ -24,6 +24,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
+import { ShinyButton } from "@/components/ui/ShinyButton";
 
 interface ActionCardProps {
   report: TriageReport;
@@ -161,7 +162,7 @@ export function ActionCard({
   return (
     <section
       aria-label="Solution-First Guidance and Evidence"
-      className="card-3d-tactile rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden"
+      className="rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden backdrop-blur-2xl bg-slate-900/40 dark:bg-[#080e1a]/60 border border-transparent hover:shadow-[0_0_35px_rgba(6,182,212,0.15)] transition-all duration-300"
     >
       {/* 3D Border Beam for Critical & High Hazards */}
       {(report.severity_level === "CRITICAL" || report.severity_level === "HIGH") && (
@@ -176,7 +177,7 @@ export function ActionCard({
       {/* If user switched UI language after generating report, offer 1-click translation */}
       {isDifferentLanguage && (
         <div
-          className={`px-4 py-2.5 rounded-2xl backdrop-blur-md flex flex-wrap items-center justify-between gap-2 text-xs ${
+          className={`px-4 py-2.5 rounded-2xl backdrop-blur-md flex flex-wrap items-center justify-between gap-2 text-xs border border-transparent ${
             isLight
               ? "bg-cyan-50/90 text-cyan-950"
               : "bg-cyan-950/60 text-cyan-100"
@@ -186,22 +187,23 @@ export function ActionCard({
             <Globe className="w-4 h-4 text-cyan-500" />
             <span>{t.translateResultPrompt}</span>
           </span>
-          <button
-            type="button"
+          <ShinyButton
+            variant="cyan"
+            size="sm"
             disabled={isResolving}
             onClick={onTranslateActiveReport}
-            className="btn-3d-cyan px-4 py-1.5 rounded-full text-white font-bold text-xs cursor-pointer transition disabled:opacity-50"
+            className="rounded-full font-bold text-xs"
           >
             {isResolving ? t.updatingAnalysisBtn : t.translateResultBtn}
-          </button>
+          </ShinyButton>
         </div>
       )}
 
       {/* Grounded Input Snapshot Pill — Proves this result matches the exact submitted text */}
       <div
-        className={`px-4 py-2.5 rounded-2xl text-xs flex flex-wrap items-center justify-between gap-2 border ${
+        className={`px-4 py-2.5 rounded-2xl text-xs flex flex-wrap items-center justify-between gap-2 border border-transparent ${
           isLight
-            ? "bg-slate-100/90 text-slate-800 border-slate-200"
+            ? "bg-slate-100/90 text-slate-800"
             : "bg-slate-900/90 text-slate-200 border-white/10"
         }`}
       >
@@ -431,20 +433,23 @@ export function ActionCard({
         </div>
       )}
 
-      {/* ==================== 4. 3D TACTILE EMERGENCY CONTROLS ==================== */}
+      {/* ==================== 4. 21ST.DEV SHINY EMERGENCY CONTROLS ==================== */}
       <div className="flex flex-wrap items-center gap-3 pt-2">
-        <a
+        <ShinyButton
+          variant="red"
+          size="lg"
           href="tel:112"
-          className="btn-3d-red flex items-center space-x-2.5 text-xs sm:text-sm font-extrabold px-6 py-3.5 rounded-2xl shadow-xl cursor-pointer"
+          className="shadow-xl"
         >
-          <PhoneCall className="w-4 h-4" />
+          <PhoneCall className="w-4 h-4 animate-pulse" />
           <span>{t.call112}</span>
-        </a>
+        </ShinyButton>
 
-        <button
-          type="button"
+        <ShinyButton
+          variant="cyan"
+          size="lg"
           onClick={handleCopyBrief}
-          className="btn-3d-cyan flex items-center space-x-2 text-xs font-extrabold px-5 py-3.5 rounded-2xl shadow-xl cursor-pointer"
+          className="shadow-xl"
         >
           {copied ? (
             <Check className="w-4 h-4 text-white" />
@@ -452,25 +457,27 @@ export function ActionCard({
             <Copy className="w-4 h-4" />
           )}
           <span>{copied ? "✓ Copied for 112 SMS" : t.copyBriefBtn}</span>
-        </button>
+        </ShinyButton>
 
-        <a
+        <ShinyButton
+          variant="slate"
+          size="lg"
           href={smsLink}
-          className="btn-3d-slate flex items-center space-x-2 text-xs font-bold px-4 py-3.5 rounded-2xl cursor-pointer"
         >
           <MessageSquare className="w-3.5 h-3.5 text-cyan-400" />
           <span>{t.shareSmsBtn}</span>
-        </a>
+        </ShinyButton>
 
-        <a
+        <ShinyButton
+          variant="emerald"
+          size="lg"
           href={whatsappLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="btn-3d-slate flex items-center space-x-2 text-xs font-bold px-4 py-3.5 rounded-2xl hover:text-emerald-400 cursor-pointer"
         >
           <Share2 className="w-3.5 h-3.5 text-emerald-400" />
           <span>{t.shareWhatsappBtn}</span>
-        </a>
+        </ShinyButton>
       </div>
 
       {/* ==================== 5. UNCERTAINTY STATEMENT & EXPAND TOGGLE ==================== */}

@@ -10,6 +10,7 @@ import { CornerGlobeOrb } from "@/components/overlays/CornerGlobeOrb";
 import { HistoryDrawer } from "@/components/overlays/HistoryDrawer";
 import { CommandSpaceBackground } from "@/components/scene/CommandSpaceBackground";
 import { LiquidSculptureHero } from "@/components/scene/LiquidSculptureHero";
+import { ShinyButton } from "@/components/ui/ShinyButton";
 import { TriageReport, SeverityLevel } from "@/types/triage";
 import { PRESET_SCENARIOS } from "@/lib/presets";
 import { CORE_HOTSPOTS } from "@/components/scene/HolographicCore";
@@ -357,15 +358,14 @@ export default function ResQvantaApp() {
             backdropText="RESQVANTA"
             className="w-full my-auto py-2"
           >
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center py-4">
-              {/* Left Floating Typography (Open Canvas over 3D Core) */}
-              <div className="lg:col-span-7 space-y-5 pointer-events-auto py-4">
-              <div className="flex flex-wrap items-center gap-2.5">
+            {/* Centered Symmetrical Showroom Stack */}
+            <div className="max-w-4xl mx-auto w-full text-center flex flex-col items-center space-y-6 py-6 pointer-events-auto">
+              <div className="flex flex-wrap items-center justify-center gap-2.5">
                 <span
-                  className={`inline-flex items-center space-x-1.5 px-3.5 py-1 rounded-full text-xs font-mono font-bold backdrop-blur-md ${
+                  className={`inline-flex items-center space-x-1.5 px-3.5 py-1 rounded-full text-xs font-mono font-bold backdrop-blur-xl border border-transparent ${
                     isLight
-                      ? "bg-white/80 text-cyan-800 shadow-2xs"
-                      : "bg-slate-950/70 text-cyan-300"
+                      ? "bg-white/80 text-cyan-800 shadow-sm"
+                      : "bg-slate-950/70 text-cyan-300 shadow-sm"
                   }`}
                 >
                   <Sparkles className="w-3.5 h-3.5" />
@@ -378,14 +378,14 @@ export default function ResQvantaApp() {
                   <span className={isLight ? "text-slate-600" : "text-slate-400"}>
                     TRIAGE:
                   </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-500 dark:text-cyan-300 font-semibold transition-all">
+                  <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/15 border border-transparent text-cyan-500 dark:text-cyan-300 font-semibold transition-all">
                     {ROTATING_HAZARDS[rotatingWordIndex]}
                   </span>
                 </div>
               </div>
 
               <h1
-                className={`text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.08] ${
+                className={`text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-[1.08] text-center max-w-3xl ${
                   isLight ? "drop-shadow-xs" : "drop-shadow-md"
                 }`}
               >
@@ -402,17 +402,18 @@ export default function ResQvantaApp() {
               </h1>
 
               <p
-                className={`text-sm sm:text-base max-w-xl font-medium leading-relaxed ${
-                  isLight ? "text-slate-700" : "text-slate-200"
+                className={`text-sm sm:text-base max-w-2xl font-medium leading-relaxed text-center ${
+                  isLight ? "text-slate-700" : "text-slate-300"
                 }`}
               >
                 {t.heroSupportText}
               </p>
 
-              {/* Primary CTAs */}
-              <div className="flex flex-wrap items-center gap-3 pt-1">
-                <button
-                  type="button"
+              {/* 21st.dev Shiny CTAs Centered */}
+              <div className="flex flex-wrap items-center justify-center gap-3.5 pt-1">
+                <ShinyButton
+                  variant="cyan"
+                  size="lg"
                   onClick={() => {
                     const demoPreset = PRESET_SCENARIOS[0];
                     const demoText = demoPreset.text;
@@ -428,96 +429,84 @@ export default function ResQvantaApp() {
                       manualLocation: demoLocation,
                     });
                   }}
-                  className="btn-3d-cyan px-7 py-3.5 rounded-2xl font-extrabold text-xs tracking-wider uppercase shadow-xl transition cursor-pointer flex items-center gap-2"
+                  className="shadow-xl"
                 >
                   <span>⚡ {t.btnLiveDemo}</span>
-                </button>
+                </ShinyButton>
 
-                <button
-                  type="button"
+                <ShinyButton
+                  variant="slate"
+                  size="lg"
                   onClick={() => setViewMode("workspace")}
-                  className="btn-3d-slate px-7 py-3.5 rounded-2xl font-extrabold text-xs tracking-wider uppercase transition flex items-center space-x-2 cursor-pointer"
                 >
                   <span>{t.btnEnterWorkspace}</span>
                   <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
+                </ShinyButton>
 
-              {/* Emergency-First Skip Link */}
-              <div className="pt-2 flex flex-wrap items-center gap-3 text-xs font-medium">
-                <span className={isLight ? "text-slate-700" : "text-slate-300"}>
-                  {t.emergencySkipPrompt}
-                </span>
-                <a
+                <ShinyButton
+                  variant="red"
+                  size="lg"
                   href="tel:112"
-                  className="btn-3d-red px-4 py-1.5 rounded-full inline-flex items-center gap-1.5 text-xs font-bold text-white shadow-md"
+                  className="shadow-xl"
                 >
-                  <PhoneCall className="w-3.5 h-3.5" />
+                  <PhoneCall className="w-4 h-4 animate-pulse" />
                   <span>{t.emergencyCallNow}</span>
-                </a>
+                </ShinyButton>
               </div>
 
-              {/* 3-Step Process Flow (Viral Reel Pattern) */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2">
+              {/* 3-Step Process Flow in Borderless Glass Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 w-full max-w-3xl pt-2">
                 <div
-                  className={`p-3 rounded-2xl backdrop-blur-md border ${
-                    isLight
-                      ? "bg-white/70 border-slate-200/80"
-                      : "bg-[#121e30]/75 border-white/10"
+                  className={`p-4 rounded-3xl backdrop-blur-2xl border border-transparent text-left shadow-xl hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] transition-all ${
+                    isLight ? "bg-white/70" : "bg-slate-900/40"
                   }`}
                 >
-                  <span className="text-[10px] font-mono font-bold text-cyan-600 dark:text-cyan-400 block mb-0.5">
+                  <span className="text-[10px] font-mono font-bold text-cyan-600 dark:text-cyan-400 block mb-1">
                     01 · INPUT
                   </span>
-                  <h4 className="text-xs font-bold">Speak or Snap</h4>
+                  <h4 className="text-xs sm:text-sm font-bold">Speak or Snap</h4>
                   <p className="text-[11px] opacity-75 mt-0.5 leading-snug">
                     Hinglish/regional voice or camera photo.
                   </p>
                 </div>
 
                 <div
-                  className={`p-3 rounded-2xl backdrop-blur-md border ${
-                    isLight
-                      ? "bg-white/70 border-slate-200/80"
-                      : "bg-[#121e30]/75 border-white/10"
+                  className={`p-4 rounded-3xl backdrop-blur-2xl border border-transparent text-left shadow-xl hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] transition-all ${
+                    isLight ? "bg-white/70" : "bg-slate-900/40"
                   }`}
                 >
-                  <span className="text-[10px] font-mono font-bold text-cyan-600 dark:text-cyan-400 block mb-0.5">
+                  <span className="text-[10px] font-mono font-bold text-cyan-600 dark:text-cyan-400 block mb-1">
                     02 · REASON
                   </span>
-                  <h4 className="text-xs font-bold">Gemini 3.5 Flash</h4>
+                  <h4 className="text-xs sm:text-sm font-bold">Gemini 3.5 Flash</h4>
                   <p className="text-[11px] opacity-75 mt-0.5 leading-snug">
                     Extracts severity, hazards & missing info.
                   </p>
                 </div>
 
                 <div
-                  className={`p-3 rounded-2xl backdrop-blur-md border ${
-                    isLight
-                      ? "bg-white/70 border-slate-200/80"
-                      : "bg-[#121e30]/75 border-white/10"
+                  className={`p-4 rounded-3xl backdrop-blur-2xl border border-transparent text-left shadow-xl hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] transition-all ${
+                    isLight ? "bg-white/70" : "bg-slate-900/40"
                   }`}
                 >
-                  <span className="text-[10px] font-mono font-bold text-cyan-600 dark:text-cyan-400 block mb-0.5">
+                  <span className="text-[10px] font-mono font-bold text-cyan-600 dark:text-cyan-400 block mb-1">
                     03 · ACTION
                   </span>
-                  <h4 className="text-xs font-bold">112 Brief & SMS</h4>
+                  <h4 className="text-xs sm:text-sm font-bold">112 Brief & SMS</h4>
                   <p className="text-[11px] opacity-75 mt-0.5 leading-snug">
                     3 priority actions + operator dispatch text.
                   </p>
                 </div>
               </div>
 
-              {/* Verified Metrics Row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+              {/* Verified Metrics Row (Borderless Glass) */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-3xl pt-1">
                 <div
-                  className={`p-2 rounded-xl text-center backdrop-blur-md ${
-                    isLight
-                      ? "bg-white/60"
-                      : "bg-slate-900/60 border border-white/5"
+                  className={`p-3 rounded-2xl text-center backdrop-blur-2xl border border-transparent shadow-lg ${
+                    isLight ? "bg-white/60" : "bg-slate-900/40"
                   }`}
                 >
-                  <div className="text-sm font-extrabold text-cyan-600 dark:text-cyan-400">
+                  <div className="text-base font-extrabold text-cyan-600 dark:text-cyan-400">
                     1.2s
                   </div>
                   <div className="text-[9px] uppercase font-mono opacity-70">
@@ -525,13 +514,11 @@ export default function ResQvantaApp() {
                   </div>
                 </div>
                 <div
-                  className={`p-2 rounded-xl text-center backdrop-blur-md ${
-                    isLight
-                      ? "bg-white/60"
-                      : "bg-slate-900/60 border border-white/5"
+                  className={`p-3 rounded-2xl text-center backdrop-blur-2xl border border-transparent shadow-lg ${
+                    isLight ? "bg-white/60" : "bg-slate-900/40"
                   }`}
                 >
-                  <div className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
+                  <div className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">
                     4 Languages
                   </div>
                   <div className="text-[9px] uppercase font-mono opacity-70">
@@ -539,13 +526,11 @@ export default function ResQvantaApp() {
                   </div>
                 </div>
                 <div
-                  className={`p-2 rounded-xl text-center backdrop-blur-md ${
-                    isLight
-                      ? "bg-white/60"
-                      : "bg-slate-900/60 border border-white/5"
+                  className={`p-3 rounded-2xl text-center backdrop-blur-2xl border border-transparent shadow-lg ${
+                    isLight ? "bg-white/60" : "bg-slate-900/40"
                   }`}
                 >
-                  <div className="text-sm font-extrabold text-amber-500">
+                  <div className="text-base font-extrabold text-amber-500">
                     100%
                   </div>
                   <div className="text-[9px] uppercase font-mono opacity-70">
@@ -553,13 +538,11 @@ export default function ResQvantaApp() {
                   </div>
                 </div>
                 <div
-                  className={`p-2 rounded-xl text-center backdrop-blur-md ${
-                    isLight
-                      ? "bg-white/60"
-                      : "bg-slate-900/60 border border-white/5"
+                  className={`p-3 rounded-2xl text-center backdrop-blur-2xl border border-transparent shadow-lg ${
+                    isLight ? "bg-white/60" : "bg-slate-900/40"
                   }`}
                 >
-                  <div className="text-sm font-extrabold text-blue-500">
+                  <div className="text-base font-extrabold text-blue-500">
                     WGS84
                   </div>
                   <div className="text-[9px] uppercase font-mono opacity-70">
@@ -567,100 +550,90 @@ export default function ResQvantaApp() {
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Right Floating Hotspot Selector */}
-            <div className="lg:col-span-5 pointer-events-auto space-y-2.5">
-              <div className="flex items-center justify-between px-1">
-                <span
-                  className={`text-[11px] font-mono font-bold uppercase tracking-wider ${
-                    isLight ? "text-cyan-800" : "text-cyan-400"
-                  }`}
-                >
-                  {t.hotspotsHeader}
-                </span>
-                <span className="text-[10px] font-mono opacity-70">
-                  {t.hotspotsHint}
-                </span>
-              </div>
+              {/* Interactive Architecture / Hotspots Selector in Borderless Bento */}
+              <div className="w-full max-w-3xl pt-2 space-y-2.5">
+                <div className="flex items-center justify-between px-1">
+                  <span
+                    className={`text-[11px] font-mono font-bold uppercase tracking-wider ${
+                      isLight ? "text-cyan-800" : "text-cyan-400"
+                    }`}
+                  >
+                    {t.hotspotsHeader}
+                  </span>
+                  <span className="text-[10px] font-mono opacity-70">
+                    {t.hotspotsHint}
+                  </span>
+                </div>
 
-              <div
-                className="space-y-2"
-                role="tablist"
-                aria-label={t.hotspotsHeader}
-              >
-                {CORE_HOTSPOTS.map((spot) => {
-                  const isSelected = activeHotspot === spot.id;
-                  const title = t.hotspots[spot.titleKey];
-                  const desc = t.hotspots[spot.descKey];
-                  return (
-                    <button
-                      key={spot.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={isSelected}
-                      onClick={() => setActiveHotspot(spot.id)}
-                      className={`w-full text-left p-4 rounded-2xl transition cursor-pointer ${
-                        isSelected
-                          ? "btn-3d-cyan text-white shadow-xl"
-                          : "card-3d-tactile hover:border-cyan-400/50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 text-xs font-bold">
-                        <span
-                          className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
-                            isSelected
-                              ? isLight
-                                ? "bg-white text-cyan-700"
-                                : "bg-cyan-400 text-slate-950"
-                              : "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300"
-                          }`}
-                        >
-                          {spot.label}
-                        </span>
-                        <span>{title}</span>
-                      </div>
-                      <p
-                        className={`text-xs mt-1 leading-relaxed ${
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5" role="tablist">
+                  {CORE_HOTSPOTS.map((spot) => {
+                    const isSelected = activeHotspot === spot.id;
+                    const title = t.hotspots[spot.titleKey];
+                    const desc = t.hotspots[spot.descKey];
+                    return (
+                      <button
+                        key={spot.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={isSelected}
+                        onClick={() => setActiveHotspot(spot.id)}
+                        className={`text-left p-4 rounded-3xl transition cursor-pointer border border-transparent backdrop-blur-2xl ${
                           isSelected
-                            ? isLight
-                              ? "text-cyan-50"
-                              : "text-slate-100"
+                            ? "bg-cyan-500/25 text-white shadow-[0_0_28px_rgba(6,182,212,0.3)]"
                             : isLight
-                            ? "text-slate-600"
-                            : "text-slate-300"
+                            ? "bg-white/60 text-slate-800 hover:bg-white/90"
+                            : "bg-slate-900/40 text-slate-200 hover:bg-slate-900/70"
                         }`}
                       >
-                        {desc}
-                      </p>
-                    </button>
-                  );
-                })}
+                        <div className="flex items-center gap-2 text-xs font-bold mb-1">
+                          <span
+                            className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                              isSelected
+                                ? "bg-cyan-400 text-slate-950"
+                                : "bg-cyan-500/15 text-cyan-400"
+                            }`}
+                          >
+                            {spot.label}
+                          </span>
+                          <span className="truncate">{title}</span>
+                        </div>
+                        <p className="text-[11px] opacity-75 leading-relaxed line-clamp-2">
+                          {desc}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
-          </div>
         </LiquidSculptureHero>
       )}
 
       {/* ==================== ACT 2 & 3: CENTERED WORKSPACE & SOLUTION-FIRST OUTPUT ==================== */}
         {viewMode === "workspace" && (
-          <div className="max-w-3xl w-full mx-auto space-y-5 pointer-events-auto my-auto py-2">
-            {/* Prototype Transparency & 112 Advisory Banner */}
+          <div className="max-w-4xl w-full mx-auto space-y-5 pointer-events-auto my-auto py-2">
+            {/* Prototype Transparency & 112 Advisory Banner (Borderless Glass) */}
             <div
-              className="card-3d-tactile rounded-2xl p-3.5 px-4 flex items-center justify-between gap-3 text-xs"
+              className={`rounded-3xl p-3.5 px-5 flex items-center justify-between gap-3 text-xs border border-transparent backdrop-blur-2xl shadow-xl ${
+                isLight ? "bg-white/75 text-slate-800" : "bg-slate-900/50 text-slate-200"
+              }`}
             >
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-                <span className={isLight ? "text-slate-800" : "text-slate-200"}>
+                <span>
                   <strong className="text-amber-500">Disaster Assistance Prototype</strong>: Generates operator-ready briefs. For immediate life-saving aid, always call <strong>112</strong> directly.
                 </span>
               </div>
-              <a
+              <ShinyButton
+                variant="red"
+                size="sm"
                 href="tel:112"
-                className="btn-3d-red px-4 py-1.5 rounded-full font-extrabold text-[11px] shrink-0 transition"
+                className="font-bold text-xs shrink-0"
               >
-                Call 112
-              </a>
+                <PhoneCall className="w-3.5 h-3.5 animate-pulse" />
+                <span>Call 112</span>
+              </ShinyButton>
             </div>
 
             {/* API Error Alert (if any) */}

@@ -157,10 +157,10 @@ export function CornerGlobeOrb({
           type="button"
           onClick={() => setIsOpen(true)}
           aria-label="Open 3D Geospatial Radar Flyover Modal"
-          className="group relative flex items-center gap-3 p-1.5 pr-4 rounded-full bg-slate-900/95 hover:bg-slate-900 text-white border-2 border-cyan-500/40 hover:border-cyan-400 shadow-[0_8px_32px_rgba(0,0,0,0.6),0_0_20px_rgba(6,182,212,0.25)] backdrop-blur-xl transition-all duration-300 transform hover:scale-105 active:scale-95 cursor-pointer"
+          className="group relative flex items-center gap-3 p-1.5 pr-4 rounded-full bg-slate-900/90 hover:bg-slate-900 text-white border border-transparent shadow-[0_8px_32px_rgba(0,0,0,0.6),0_0_24px_rgba(6,182,212,0.3)] backdrop-blur-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 cursor-pointer"
         >
           {/* Real 3D Rotating Earth Sphere Canvas */}
-          <div className="relative w-14 h-14 rounded-full overflow-hidden bg-slate-950 flex items-center justify-center shrink-0 border border-cyan-400/30">
+          <div className="relative w-14 h-14 rounded-full overflow-hidden bg-slate-950 flex items-center justify-center shrink-0 border border-transparent">
             <canvas ref={miniCanvasRef} className="w-full h-full" />
             {/* Radar Wave Ping Ping */}
             <span className="absolute -inset-1 rounded-full border border-cyan-400/40 animate-ping pointer-events-none" />
@@ -195,9 +195,9 @@ export function CornerGlobeOrb({
           className="fixed inset-0 z-50 flex flex-col bg-slate-950/95 backdrop-blur-2xl animate-in fade-in duration-200"
         >
           {/* Top Bar Header */}
-          <div className="h-16 px-4 md:px-8 flex items-center justify-between border-b border-white/10 bg-slate-900/90 shadow-md">
+          <div className="h-16 px-4 md:px-8 flex items-center justify-between border-b border-transparent bg-slate-900/90 shadow-md">
             <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-300 flex items-center justify-center border border-cyan-500/30 shadow-inner">
+              <div className="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-300 flex items-center justify-center border border-transparent shadow-inner">
                 <Radio className="w-5 h-5 animate-pulse text-cyan-400" />
               </div>
               <div>
@@ -205,7 +205,7 @@ export function CornerGlobeOrb({
                   <h2 className="text-sm md:text-base font-extrabold text-white tracking-tight">
                     3D Geospatial Orbital Flyover
                   </h2>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-transparent">
                     {cityName} Sector HQ
                   </span>
                 </div>
@@ -216,7 +216,7 @@ export function CornerGlobeOrb({
             </div>
 
             {/* Stage Selector Pills */}
-            <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-full border border-white/10 text-xs">
+            <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-full border border-transparent text-xs">
               {(
                 [
                   { id: "space", label: "Space 🌍" },
@@ -228,7 +228,7 @@ export function CornerGlobeOrb({
                   key={stage.id}
                   type="button"
                   onClick={() => onFlyoverStageChange(stage.id)}
-                  className={`px-3.5 py-1 rounded-full font-bold transition cursor-pointer text-xs ${
+                  className={`px-3.5 py-1 rounded-full font-bold transition cursor-pointer text-xs border border-transparent ${
                     flyoverStage === stage.id
                       ? "bg-cyan-500 text-slate-950 shadow-[0_2px_8px_rgba(6,182,212,0.5)]"
                       : "text-slate-400 hover:text-white"
@@ -244,7 +244,7 @@ export function CornerGlobeOrb({
               type="button"
               onClick={() => setIsOpen(false)}
               aria-label="Close 3D Radar Flyover"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition cursor-pointer border border-white/10"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition cursor-pointer border border-transparent"
             >
               <X className="w-4 h-4" />
               <span className="hidden sm:inline">Close (ESC)</span>
@@ -266,7 +266,7 @@ export function CornerGlobeOrb({
 
             {/* Bottom HUD Overlay with Sector Facilities & Climate Telemetry */}
             <div className="absolute bottom-6 left-6 right-6 md:left-8 md:right-auto max-w-md pointer-events-none space-y-2">
-              <div className="p-4 rounded-2xl bg-slate-900/90 backdrop-blur-md border border-cyan-500/20 text-xs text-slate-200 pointer-events-auto space-y-2 shadow-2xl">
+              <div className="p-4 rounded-3xl bg-slate-900/90 backdrop-blur-2xl border border-transparent text-xs text-slate-200 pointer-events-auto space-y-2 shadow-2xl">
                 <div className="flex items-center justify-between text-cyan-400 font-bold">
                   <span className="flex items-center gap-1.5">
                     <Compass className="w-4 h-4" />
@@ -279,7 +279,7 @@ export function CornerGlobeOrb({
                 <p className="text-[11px] text-slate-300">
                   {resolved.city.state}, {resolved.city.country} · Ground Elevation {resolved.city.altitudeKm}km
                 </p>
-                <div className="pt-1.5 flex items-center justify-between text-[10px] font-mono text-slate-400 border-t border-white/10">
+                <div className="pt-1.5 flex items-center justify-between text-[10px] font-mono text-slate-400 border-t border-transparent">
                   <span>Temperature: {resolved.city.weather.tempC}°C ({resolved.city.weather.condition})</span>
                   <span>Wind: {resolved.city.weather.windKmh}km/h {resolved.city.weather.windDirection}</span>
                 </div>
