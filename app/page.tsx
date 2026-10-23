@@ -9,6 +9,7 @@ import { IncidentRadar } from "@/components/ui/IncidentRadar";
 import { CornerGlobeOrb } from "@/components/overlays/CornerGlobeOrb";
 import { HistoryDrawer } from "@/components/overlays/HistoryDrawer";
 import { CommandSpaceBackground } from "@/components/scene/CommandSpaceBackground";
+import { LiquidSculptureHero } from "@/components/scene/LiquidSculptureHero";
 import { TriageReport, SeverityLevel } from "@/types/triage";
 import { PRESET_SCENARIOS } from "@/lib/presets";
 import { CORE_HOTSPOTS } from "@/components/scene/HolographicCore";
@@ -351,9 +352,14 @@ export default function ResQvantaApp() {
       <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 md:px-8 pt-4 pb-24 lg:py-6 flex flex-col justify-center pointer-events-none">
         {/* ==================== ACT 1: THE LUXURY ENTRANCE ==================== */}
         {viewMode === "hero" && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center my-auto py-4">
-            {/* Left Floating Typography (Open Canvas over 3D Core) */}
-            <div className="lg:col-span-7 space-y-5 pointer-events-auto py-4">
+          <LiquidSculptureHero
+            theme={theme}
+            backdropText="RESQVANTA"
+            className="w-full my-auto py-2"
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center py-4">
+              {/* Left Floating Typography (Open Canvas over 3D Core) */}
+              <div className="lg:col-span-7 space-y-5 pointer-events-auto py-4">
               <div className="flex flex-wrap items-center gap-2.5">
                 <span
                   className={`inline-flex items-center space-x-1.5 px-3.5 py-1 rounded-full text-xs font-mono font-bold backdrop-blur-md ${
@@ -633,9 +639,10 @@ export default function ResQvantaApp() {
               </div>
             </div>
           </div>
-        )}
+        </LiquidSculptureHero>
+      )}
 
-        {/* ==================== ACT 2 & 3: CENTERED WORKSPACE & SOLUTION-FIRST OUTPUT ==================== */}
+      {/* ==================== ACT 2 & 3: CENTERED WORKSPACE & SOLUTION-FIRST OUTPUT ==================== */}
         {viewMode === "workspace" && (
           <div className="max-w-3xl w-full mx-auto space-y-5 pointer-events-auto my-auto py-2">
             {/* Prototype Transparency & 112 Advisory Banner */}
