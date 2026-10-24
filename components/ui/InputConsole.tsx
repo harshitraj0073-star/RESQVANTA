@@ -13,6 +13,11 @@ import {
   Loader2,
   Trash2,
   PhoneCall,
+  Siren,
+  ShieldAlert,
+  Ambulance,
+  Flame,
+  ArrowRight,
 } from "lucide-react";
 
 interface MinimalSpeechRecognition {
@@ -463,6 +468,77 @@ export function InputConsole({
                 className="underline text-[10px] cursor-pointer"
               >
                 {t.clearBtn}
+              </button>
+            </div>
+          )}
+
+          {/* Quick Emergency Dispatch Units Action Bar (Activates upon Location Detection) */}
+          {(gpsCoords || manualLocation.trim().length > 3) && (
+            <div
+              className={`mt-2 p-3.5 rounded-2xl border border-transparent backdrop-blur-md transition-all duration-300 ${
+                isLight
+                  ? "bg-red-50/90 text-slate-900 shadow-sm"
+                  : "bg-red-950/40 text-slate-100"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-1.5 text-xs font-extrabold text-red-600 dark:text-red-400">
+                  <Siren className="w-4 h-4 animate-bounce" />
+                  <span>EMERGENCY DISPATCH UNITS READY</span>
+                </div>
+                <span className="text-[10px] font-mono opacity-70">
+                  {gpsCoords ? "GPS LOCKED" : "ZONE IDENTIFIED"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-1.5 text-[11px] font-semibold mb-3">
+                <div
+                  className={`p-2 rounded-xl flex items-center gap-1.5 ${
+                    isLight ? "bg-white/90 text-slate-800" : "bg-slate-900/80 text-slate-200"
+                  }`}
+                >
+                  <Ambulance className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <span className="truncate">Ambulance (108)</span>
+                </div>
+                <div
+                  className={`p-2 rounded-xl flex items-center gap-1.5 ${
+                    isLight ? "bg-white/90 text-slate-800" : "bg-slate-900/80 text-slate-200"
+                  }`}
+                >
+                  <ShieldAlert className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
+                  <span className="truncate">Police (112)</span>
+                </div>
+                <div
+                  className={`p-2 rounded-xl flex items-center gap-1.5 ${
+                    isLight ? "bg-white/90 text-slate-800" : "bg-slate-900/80 text-slate-200"
+                  }`}
+                >
+                  <Flame className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span className="truncate">Fire (101)</span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                disabled={isLoading}
+                onClick={() => {
+                  if (!inputText.trim()) {
+                    setErrorMessage("Please describe the emergency incident before dispatching.");
+                    return;
+                  }
+                  onAnalyze({
+                    text: inputText.trim(),
+                    imageBase64,
+                    imageMimeType,
+                    gpsCoords,
+                    manualLocation,
+                  });
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs tracking-wide uppercase transition flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-60"
+              >
+                <Siren className="w-4 h-4" />
+                <span>Dispatch Emergency Units & Transmit GPS</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
