@@ -334,8 +334,8 @@ export default function ResQvantaApp() {
         historyCount={incidentFeed.length}
       />
 
-      {/* 3. Truly Open-Canvas Floating Content Layer (No Bulky Opaque Panels) */}
-      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 md:px-8 pt-4 pb-24 lg:py-6 flex flex-col justify-center pointer-events-none">
+      {/* 3. Screen-Filling Responsive Floating Content Layer (Calibrated for All Viewports) */}
+      <main className="relative z-10 flex-1 w-full max-w-[1536px] 2xl:max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 pt-4 pb-24 lg:py-6 flex flex-col justify-center pointer-events-none">
         {/* ==================== ACT 1: THE LUXURY ENTRANCE ==================== */}
         {viewMode === "hero" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center my-auto py-4">

@@ -11,7 +11,7 @@ html[data-theme="light"] {
   --text-muted: #64748b;
   --accent-cyan: #0891b2;
   --accent-gold: #d97706;
-  --divider-subtle: rgba(15, 23, 42, 0.08);
+  --divider-subtle: transparent;
   --focus-ring: #0891b2;
 }
 
@@ -25,8 +25,15 @@ html[data-theme="dark"] {
   --text-muted: #94a3b8;
   --accent-cyan: #22d3ee;
   --accent-gold: #f59e0b;
-  --divider-subtle: rgba(248, 250, 252, 0.08);
+  --divider-subtle: transparent;
   --focus-ring: #22d3ee;
+}
+
+/* Enforce 100% transparent borders across whole website as requested */
+*,
+::before,
+::after {
+  border-color: transparent;
 }
 
 @theme inline {

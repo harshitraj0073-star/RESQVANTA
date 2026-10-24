@@ -52,7 +52,7 @@ export function IncidentRadar({
 }: IncidentRadarProps) {
   const [isLocating, setIsLocating] = useState(false);
   const [userSelectedNodeId, setUserSelectedNodeId] = useState<string | null>(null);
-  const [viewModeTab, setViewModeTab] = useState<"globe" | "satellite" | "map">("globe");
+  const [viewModeTab, setViewModeTab] = useState<"satellite" | "map">("satellite");
   const isLight = theme === "light";
 
   // WGS84 authoritative city resolution
@@ -207,60 +207,20 @@ export function IncidentRadar({
       </div>
 
       {/* 2. Cinematic Flyover Breadcrumbs & View Switcher */}
+      {/* 2. Tactical View Mode Switcher: Satellite & Normal Map Only */}
       <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-        {/* Cinematic Altitude Breadcrumbs (Space -> India -> City) */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
           <span className="text-[11px] font-mono uppercase tracking-wider opacity-70">
-            Flyover Altitude:
+            Navigation Layer:
           </span>
-          <button
-            type="button"
-            onClick={() => onFlyoverStageChange?.("space")}
-            className={`px-3.5 py-1.5 rounded-full text-[11px] font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              flyoverStage === "space"
-                ? "bg-cyan-600 text-white shadow-xs scale-105"
-                : isLight
-                ? "bg-white/85 text-slate-700 hover:bg-white border border-slate-200/60"
-                : "bg-slate-900/80 text-slate-300 hover:bg-slate-800 border border-slate-800"
-            }`}
-          >
-            <Globe className="w-3 h-3" />
-            <span>Space Orbit (~12,000 km)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onFlyoverStageChange?.("country")}
-            className={`px-3.5 py-1.5 rounded-full text-[11px] font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              flyoverStage === "country"
-                ? "bg-cyan-600 text-white shadow-xs scale-105"
-                : isLight
-                ? "bg-white/85 text-slate-700 hover:bg-white border border-slate-200/60"
-                : "bg-slate-900/80 text-slate-300 hover:bg-slate-800 border border-slate-800"
-            }`}
-          >
-            <span>🇮🇳 India Subcontinent (~2,500 km)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onFlyoverStageChange?.("city")}
-            className={`px-3.5 py-1.5 rounded-full text-[11px] font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              flyoverStage === "city"
-                ? "bg-cyan-600 text-white shadow-xs scale-105"
-                : isLight
-                ? "bg-white/85 text-slate-700 hover:bg-white border border-slate-200/60"
-                : "bg-slate-900/80 text-slate-300 hover:bg-slate-800 border border-slate-800"
-            }`}
-          >
-            <Compass className="w-3 h-3 text-amber-400" />
-            <span>{activeCity.name} Sector (~150 km)</span>
-          </button>
+          <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400">
+            {viewModeTab === "satellite" ? "Google Maps Platform Satellite" : "OpenStreetMap 2D Vector"}
+          </span>
         </div>
 
         {/* View Mode Switcher */}
         <div
-          className={`p-1 rounded-2xl sm:rounded-full text-xs font-bold flex flex-wrap sm:flex-nowrap items-center gap-1 backdrop-blur-md ${
+          className={`p-1 rounded-2xl sm:rounded-full text-xs font-bold flex flex-wrap sm:flex-nowrap items-center gap-1 backdrop-blur-md border border-transparent ${
             isLight
               ? "bg-slate-200/70 text-slate-700"
               : "bg-slate-900/90 text-slate-300"
@@ -268,23 +228,11 @@ export function IncidentRadar({
         >
           <button
             type="button"
-            onClick={() => setViewModeTab("globe")}
-            className={`px-3 py-1 rounded-full text-xs transition cursor-pointer flex items-center gap-1.5 ${
-              viewModeTab === "globe"
-                ? "bg-cyan-600 text-white shadow-2xs"
-                : "hover:text-cyan-500"
-            }`}
-          >
-            <Radar className="w-3.5 h-3.5" />
-            <span>3D Planetary Radar</span>
-          </button>
-          <button
-            type="button"
             onClick={() => setViewModeTab("satellite")}
-            className={`px-3 py-1 rounded-full text-xs transition cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-full text-xs transition cursor-pointer flex items-center gap-1.5 ${
               viewModeTab === "satellite"
-                ? "bg-cyan-600 text-white shadow-2xs"
-                : "hover:text-cyan-500"
+                ? "bg-cyan-600 text-white shadow-xs"
+                : "hover:text-cyan-400 text-slate-400"
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
@@ -293,10 +241,10 @@ export function IncidentRadar({
           <button
             type="button"
             onClick={() => setViewModeTab("map")}
-            className={`px-3 py-1 rounded-full text-xs transition cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-full text-xs transition cursor-pointer flex items-center gap-1.5 ${
               viewModeTab === "map"
-                ? "bg-cyan-600 text-white shadow-2xs"
-                : "hover:text-cyan-500"
+                ? "bg-cyan-600 text-white shadow-xs"
+                : "hover:text-cyan-400 text-slate-400"
             }`}
           >
             <MapPin className="w-3.5 h-3.5" />
@@ -322,12 +270,12 @@ export function IncidentRadar({
                 onGpsCoordsChange(coordsStr);
                 if (onFlyoverStageChange) onFlyoverStageChange("city");
               }}
-              className={`px-3 py-1 rounded-full text-[11px] font-mono font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-full text-[11px] font-mono font-bold transition-all cursor-pointer border border-transparent ${
                 isCurrent
                   ? "bg-cyan-600 text-white shadow-xs ring-2 ring-cyan-400/40"
                   : isLight
-                  ? "bg-white/85 text-slate-700 hover:bg-white border border-slate-200/60"
-                  : "bg-slate-900/80 text-slate-300 hover:bg-slate-800 border border-slate-800"
+                  ? "bg-white/85 text-slate-700 hover:bg-white"
+                  : "bg-slate-900/80 text-slate-300 hover:bg-slate-800"
               }`}
             >
               {city.shortName}
@@ -336,91 +284,18 @@ export function IncidentRadar({
         })}
       </div>
 
-      {/* 4. Prominent Center-Stage Tactical Planetary Radar Deck */}
+      {/* 4. Prominent Center-Stage Tactical Satellite & Emergency Map Deck */}
       <div
-        className={`w-full rounded-3xl overflow-hidden relative min-h-[460px] flex flex-col justify-between p-6 transition-all duration-300 border ${
-          viewModeTab !== "globe"
-            ? isLight
-              ? "bg-white/90 shadow-sm border-slate-200/80"
-              : "bg-slate-950/85 border-slate-800"
-            : isLight
-            ? "bg-white/10 border-cyan-500/35 shadow-xl shadow-cyan-950/5 backdrop-blur-[2px]"
-            : "bg-slate-950/20 border-cyan-400/40 shadow-xl shadow-cyan-500/10 backdrop-blur-[2px]"
+        className={`w-full rounded-3xl overflow-hidden relative min-h-[460px] flex flex-col justify-between p-6 transition-all duration-300 border border-transparent ${
+          isLight
+            ? "bg-white/90 shadow-md backdrop-blur-xl"
+            : "bg-slate-950/85 shadow-2xl backdrop-blur-xl"
         }`}
       >
-        {/* Tactical Viewport Layer */}
-        {viewModeTab === "globe" ? (
-          <div className="relative w-full h-[400px] flex flex-col justify-between pointer-events-none">
-            {/* Top HUD Telemetry */}
-            <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
-              <span
-                className={`px-3 py-1.5 rounded-full font-bold flex items-center gap-2 backdrop-blur-md shadow-xs ${
-                  isLight
-                    ? "bg-white/95 text-cyan-800 border border-cyan-500/30"
-                    : "bg-slate-950/95 text-cyan-300 border border-cyan-400/40"
-                }`}
-              >
-                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
-                <span>3D PLANETARY RADAR ACTIVE</span>
-              </span>
-
-              <div
-                className={`px-3.5 py-1.5 rounded-full text-[11px] font-mono backdrop-blur-md flex items-center gap-2 ${
-                  isLight
-                    ? "bg-white/90 text-slate-800 shadow-2xs border border-slate-200/70"
-                    : "bg-slate-900/90 text-slate-200 border border-slate-800"
-                }`}
-              >
-                <MapPin className="w-3.5 h-3.5 text-red-500" />
-                <span className="font-bold">{activeCityDisplayName}</span>
-                <span className="opacity-60">·</span>
-                <span>
-                  {parsedCoords.lat.toFixed(4)}° N, {parsedCoords.lon.toFixed(4)}° E
-                </span>
-              </div>
-            </div>
-
-            {/* Central Optical Targeting Scope Reticle (Framing the 3D pin directly on the optical axis) */}
-            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-              <div className="w-[300px] h-[300px] sm:w-[340px] sm:h-[340px] rounded-full border border-cyan-500/25 flex items-center justify-center relative">
-                <span className="absolute top-2 text-[9px] font-mono text-cyan-500/70 uppercase tracking-widest">
-                  Optical HUD Scope · Camera Center
-                </span>
-
-                <div className="w-[180px] h-[180px] rounded-full border border-amber-500/30 flex items-center justify-center relative">
-                  {/* Immediate Crosshair Bullseye Framing the 3D Pin */}
-                  <div className="w-20 h-20 rounded-full border border-red-500/60 flex items-center justify-center relative">
-                    <Target className="w-7 h-7 text-red-500/80 animate-pulse" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Subtitle Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-              <div
-                className={`px-3 py-1 rounded-full text-[11px] font-mono backdrop-blur-md ${
-                  isLight
-                    ? "bg-white/80 text-slate-700 shadow-2xs"
-                    : "bg-slate-900/80 text-slate-300"
-                }`}
-              >
-                Georeferenced WGS84 surface pin · 3D rings anchored to planet
-              </div>
-              <div
-                className={`px-3 py-1 rounded-full text-[11px] font-mono font-bold backdrop-blur-md ${
-                  isLight
-                    ? "bg-white/85 text-cyan-800 shadow-2xs"
-                    : "bg-slate-900/85 text-cyan-300"
-                }`}
-              >
-                Altitude: {flyoverStage === "space" ? "~12,000 km (Space Orbit)" : flyoverStage === "country" ? "~2,500 km (Subcontinent Orbit)" : "~150 km (City Sector)"}
-              </div>
-            </div>
-          </div>
-        ) : viewModeTab === "satellite" ? (
+        {/* Tactical Map Viewport Layer */}
+        {viewModeTab === "satellite" ? (
           /* Google Satellite Imagery Layer */
-          <div className="relative w-full h-[400px] rounded-2xl overflow-hidden">
+          <div className="relative w-full h-[400px] rounded-2xl overflow-hidden border border-transparent">
             <iframe
               title="Google Maps Satellite Emergency Layer"
               src={googleSatelliteEmbedUrl}
@@ -428,19 +303,19 @@ export function IncidentRadar({
               loading="lazy"
             />
             <div
-              className={`absolute top-3 left-3 px-3.5 py-1.5 rounded-full text-[11px] font-mono font-bold backdrop-blur-md flex items-center gap-2 ${
+              className={`absolute top-3 left-3 px-3.5 py-1.5 rounded-full text-[11px] font-mono font-bold backdrop-blur-md flex items-center gap-2 border border-transparent ${
                 isLight
                   ? "bg-white/95 text-slate-900 shadow-xs"
                   : "bg-slate-950/90 text-slate-100"
               }`}
             >
               <Layers className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Google Maps Platform Satellite View: {activeCity.name}</span>
+              <span>Google Maps Platform Satellite View: {activeCity.name} Sector</span>
             </div>
           </div>
         ) : (
           /* OpenStreetMap Emergency Vector Layer */
-          <div className="relative w-full h-[400px] rounded-2xl overflow-hidden">
+          <div className="relative w-full h-[400px] rounded-2xl overflow-hidden border border-transparent">
             <iframe
               title="ResQvanta Emergency Sector Map"
               src={osmEmbedUrl}
@@ -449,6 +324,16 @@ export function IncidentRadar({
               }`}
               loading="lazy"
             />
+            <div
+              className={`absolute top-3 left-3 px-3.5 py-1.5 rounded-full text-[11px] font-mono font-bold backdrop-blur-md flex items-center gap-2 border border-transparent ${
+                isLight
+                  ? "bg-white/95 text-slate-900 shadow-xs"
+                  : "bg-slate-950/90 text-slate-100"
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+              <span>OpenStreetMap Emergency Street Layer: {activeCity.name} Sector</span>
+            </div>
           </div>
         )}
 
@@ -506,14 +391,14 @@ export function IncidentRadar({
                       setUserSelectedNodeId(node.id);
                     }
                   }}
-                  className={`p-3.5 rounded-2xl backdrop-blur-md transition cursor-pointer flex items-center justify-between gap-3 ${
+                  className={`p-3.5 rounded-2xl backdrop-blur-md transition cursor-pointer flex items-center justify-between gap-3 border border-transparent ${
                     isSelected
                       ? isLight
                         ? "bg-cyan-600 text-white shadow-sm"
                         : "bg-cyan-500/25 text-white ring-1 ring-cyan-400/50"
                       : isLight
-                      ? "bg-white/80 text-slate-800 hover:bg-white border border-slate-200/50"
-                      : "bg-slate-900/80 text-slate-200 hover:bg-slate-800 border border-slate-800"
+                      ? "bg-white/80 text-slate-800 hover:bg-white"
+                      : "bg-slate-900/80 text-slate-200 hover:bg-slate-800"
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -579,10 +464,10 @@ export function IncidentRadar({
         <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
           {/* Grounded Local Weather & Atmosphere Telemetry */}
           <div
-            className={`p-4 rounded-2xl backdrop-blur-md border ${
+            className={`p-4 rounded-2xl backdrop-blur-md border border-transparent ${
               isLight
-                ? "bg-white/80 border-slate-200/70 text-slate-800"
-                : "bg-slate-900/80 border-slate-800 text-slate-200"
+                ? "bg-white/80 text-slate-800 shadow-sm"
+                : "bg-slate-900/80 text-slate-200"
             }`}
           >
             <div className="flex items-center justify-between text-xs font-bold text-amber-500 mb-2">
@@ -620,10 +505,10 @@ export function IncidentRadar({
 
           {/* Predictive Spatial Ripple Telemetry */}
           <div
-            className={`p-4 rounded-2xl backdrop-blur-md border space-y-2 ${
+            className={`p-4 rounded-2xl backdrop-blur-md border border-transparent space-y-2 ${
               isLight
-                ? "bg-white/80 border-slate-200/70 text-slate-800"
-                : "bg-slate-900/80 border-slate-800 text-slate-200"
+                ? "bg-white/80 text-slate-800 shadow-sm"
+                : "bg-slate-900/80 text-slate-200"
             }`}
           >
             <div className="text-xs font-bold text-amber-500 uppercase tracking-wider flex items-center gap-1.5">
