@@ -75,26 +75,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-theme="dark"
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var saved = localStorage.getItem('resqvanta_theme');
-                  var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
-                  document.documentElement.setAttribute('data-theme', theme);
-                } catch (e) {
-                  document.documentElement.setAttribute('data-theme', 'light');
-                }
-              })();
-            `,
-          }}
-        />
-      </head>
       <body className="min-h-full flex flex-col overflow-x-hidden">
         {children}
       </body>

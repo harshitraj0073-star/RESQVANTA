@@ -104,6 +104,21 @@ export default function ResQvantaApp() {
     }
   }, [theme]);
 
+  // Sync viewMode with URL hash (#hero, #workspace, #radar)
+  useEffect(() => {
+    const handleHash = () => {
+      if (typeof window !== "undefined") {
+        const h = window.location.hash.replace("#", "");
+        if (h === "workspace" || h === "radar" || h === "hero") {
+          setViewMode(h);
+        }
+      }
+    };
+    handleHash();
+    window.addEventListener("hashchange", handleHash);
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, []);
+
   const handleToggleTheme = () => {
     const nextTheme = theme === "light" ? "dark" : "light";
     setTheme(nextTheme);
