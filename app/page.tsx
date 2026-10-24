@@ -6,7 +6,6 @@ import { TopNav } from "@/components/ui/TopNav";
 import { InputConsole } from "@/components/ui/InputConsole";
 import { ActionCard } from "@/components/ui/ActionCard";
 import { IncidentRadar } from "@/components/ui/IncidentRadar";
-import { TimelineRuler } from "@/components/ui/TimelineRuler";
 import { TriageReport, SeverityLevel } from "@/types/triage";
 import { PRESET_SCENARIOS } from "@/lib/presets";
 import { CORE_HOTSPOTS } from "@/components/scene/HolographicCore";
@@ -82,18 +81,6 @@ export default function ResQvantaApp() {
   const [imageMimeType, setImageMimeType] = useState<string | null>(null);
   const [gpsCoords, setGpsCoords] = useState<string | null>(null);
   const [flyoverStage, setFlyoverStage] = useState<"space" | "country" | "city">("city");
-  const [timelineProgress, setTimelineProgress] = useState(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const p = urlParams.get("era");
-        if (p !== null) return Math.max(0, Math.min(1, parseFloat(p)));
-      } catch {
-        // SSR
-      }
-    }
-    return 1.0;
-  });
 
   // Strict Analysis Lifecycle & Request Isolation
   const [lifecycle, setLifecycle] = useState<AnalysisLifecycle>("idle");
@@ -344,7 +331,6 @@ export default function ResQvantaApp() {
             t={t}
             gpsCoords={gpsCoords}
             flyoverStage={flyoverStage}
-            timelineProgress={timelineProgress}
           />
         </div>
       )}
@@ -535,15 +521,6 @@ export default function ResQvantaApp() {
                   );
                 })}
               </div>
-            </div>
-
-            {/* Earth Timeline Interactive Scrubber (Quantapar Timeline Engine) */}
-            <div className="lg:col-span-12 pointer-events-auto pt-6">
-              <TimelineRuler
-                progress={timelineProgress}
-                onProgressChange={setTimelineProgress}
-                theme={theme}
-              />
             </div>
           </div>
         )}
