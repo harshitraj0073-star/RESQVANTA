@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useRef, useMemo, useEffect } from "react";
-import { useFrame } from "@react-three/fiber";
-import { Html, ContactShadows, Line } from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
+import { ContactShadows, Line } from "@react-three/drei";
 import * as THREE from "three";
 import { SeverityLevel } from "@/types/triage";
 import { UIStrings } from "@/lib/translations";
@@ -332,6 +332,23 @@ export function PhotorealisticEarthScene({
   const currentTiltY = useRef(-2.92);
 
   const isLight = theme === "light";
+  const { size } = useThree();
+  const aspect = size.width / Math.max(1, size.height);
+
+  // Mathematical Frustum Scaling: Guarantees 3D Earth is 100% visible with zero edge cropping
+  const adaptiveScale = useMemo(() => {
+    if (aspect < 0.65) return Math.min(0.65, Math.max(0.48, aspect * 1.3));
+    if (aspect < 0.95) return 0.76;
+    if (aspect < 1.25) return 0.88;
+    return 1.0;
+  }, [aspect]);
+
+  const adaptiveElevationY = useMemo(() => {
+    if (viewMode === "workspace") return 0.05;
+    if (aspect < 0.65) return 0.18;
+    if (aspect < 0.95) return 0.12;
+    return 0.08;
+  }, [aspect, viewMode]);
 
   useEffect(() => {
     const handlePointerMove = (e: PointerEvent) => {
@@ -469,10 +486,11 @@ export function PhotorealisticEarthScene({
 
     const rotSpeedMultiplier = status === "SCANNING" ? 2.0 : 0.35;
 
-    // Gentle vertical float
+    // Apply adaptive scale and vertical float to guarantee zero edge cropping
     if (groupRef.current) {
+      groupRef.current.scale.setScalar(adaptiveScale);
       groupRef.current.position.y =
-        Math.sin(tClock * 0.65) * 0.03 + (viewMode === "hero" ? 0.08 : 0.04);
+        Math.sin(tClock * 0.65) * 0.03 + adaptiveElevationY;
     }
 
     // Rotate Earth & respond to mouse parallax
@@ -691,52 +709,39 @@ export function PhotorealisticEarthScene({
         <group>
           {calibratedHotspots.map((spot) => {
             const isSelected = activeHotspot === spot.id;
-            const title = t.hotspots[spot.titleKey];
             return (
-              <Html
+              <group
                 key={spot.id}
                 position={spot.position}
-                center
-                zIndexRange={[20, 0]}
-                style={{
-                  display: viewMode === "hero" ? "block" : "none",
-                  pointerEvents: viewMode === "hero" ? "auto" : "none",
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelectHotspot(isSelected ? null : spot.id);
+                }}
+                onPointerOver={() => {
+                  if (typeof document !== "undefined") document.body.style.cursor = "pointer";
+                }}
+                onPointerOut={() => {
+                  if (typeof document !== "undefined") document.body.style.cursor = "auto";
                 }}
               >
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSelectHotspot(isSelected ? null : spot.id);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      onSelectHotspot(isSelected ? null : spot.id);
-                    }
-                  }}
-                  aria-expanded={isSelected}
-                  aria-label={title}
-                  className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md transition-all duration-300 cursor-pointer whitespace-nowrap shadow-sm ${
-                    isSelected
-                      ? "bg-cyan-600 text-white font-semibold scale-105"
-                      : isLight
-                      ? "bg-white/85 text-slate-900 hover:bg-white shadow-slate-300/60"
-                      : "bg-slate-900/80 text-slate-100 hover:bg-slate-900"
-                  }`}
-                >
-                  <span
-                    className={`w-5 h-5 rounded-full text-[10px] font-mono flex items-center justify-center font-bold ${
-                      isSelected
-                        ? "bg-white text-cyan-700"
-                        : "bg-cyan-500/20 text-cyan-600 dark:text-cyan-300"
-                    }`}
-                  >
-                    {spot.label}
-                  </span>
-                  <span className="text-xs tracking-tight">{title}</span>
-                </button>
-              </Html>
+                {/* 3D Glowing Hotspot Core */}
+                <mesh>
+                  <sphereGeometry args={[isSelected ? 0.045 : 0.03, 16, 16]} />
+                  <meshBasicMaterial
+                    color={isSelected ? "#22d3ee" : isLight ? "#0284c7" : "#38bdf8"}
+                  />
+                </mesh>
+                {/* Pulsing Concentric Outer Ring */}
+                <mesh>
+                  <ringGeometry args={[isSelected ? 0.065 : 0.045, isSelected ? 0.082 : 0.058, 32]} />
+                  <meshBasicMaterial
+                    color={isSelected ? "#22d3ee" : "#38bdf8"}
+                    side={THREE.DoubleSide}
+                    transparent
+                    opacity={isSelected ? 0.92 : 0.55}
+                  />
+                </mesh>
+              </group>
             );
           })}
         </group>

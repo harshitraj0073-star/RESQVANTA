@@ -343,15 +343,15 @@ export default function ResQvantaApp() {
       />
 
       {/* 3. Screen-Filling Responsive Floating Content Layer (Calibrated for All Viewports) */}
-      <main className="relative z-10 flex-1 w-full max-w-[1536px] 2xl:max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 pt-4 pb-24 lg:py-6 flex flex-col justify-center pointer-events-none">
+      <main className="relative z-10 flex-1 w-full max-w-[1536px] 2xl:max-w-[1720px] mx-auto px-3 sm:px-6 lg:px-8 xl:px-10 pt-2 sm:pt-4 pb-28 sm:pb-24 lg:py-6 flex flex-col justify-center pointer-events-none">
         {/* ==================== ACT 1: THE LUXURY ENTRANCE ==================== */}
         {viewMode === "hero" && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center my-auto py-4">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 items-center my-auto py-2 sm:py-4">
             {/* Left Floating Typography (Open Canvas over 3D Core) */}
-            <div className="lg:col-span-7 space-y-5 pointer-events-auto py-4">
-              <div className="flex flex-wrap items-center gap-2.5">
+            <div className="md:col-span-7 space-y-3.5 sm:space-y-5 pointer-events-auto py-2 sm:py-4">
+              <div className="flex flex-wrap items-center gap-2">
                 <span
-                  className={`inline-flex items-center space-x-1.5 px-3.5 py-1 rounded-full text-xs font-mono font-bold backdrop-blur-md ${
+                  className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-mono font-bold backdrop-blur-md ${
                     isLight
                       ? "bg-white/80 text-cyan-800 shadow-2xs"
                       : "bg-slate-950/70 text-cyan-300"
@@ -365,7 +365,7 @@ export default function ResQvantaApp() {
               </div>
 
               <h1
-                className={`text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.08] ${
+                className={`text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] break-words ${
                   isLight ? "drop-shadow-xs" : "drop-shadow-md"
                 }`}
               >
@@ -382,15 +382,15 @@ export default function ResQvantaApp() {
               </h1>
 
               <p
-                className={`text-sm sm:text-base max-w-xl font-medium leading-relaxed ${
+                className={`text-xs sm:text-sm md:text-base max-w-xl font-medium leading-relaxed ${
                   isLight ? "text-slate-700" : "text-slate-200"
                 }`}
               >
                 {t.heroSupportText}
               </p>
 
-              {/* Primary CTAs */}
-              <div className="flex flex-wrap items-center gap-3 pt-1">
+              {/* Primary CTAs (Mobile stack, Desktop row) */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3 pt-1">
                 <button
                   type="button"
                   onClick={() => {
@@ -408,7 +408,7 @@ export default function ResQvantaApp() {
                       manualLocation: demoLocation,
                     });
                   }}
-                  className="px-6 py-3.5 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs tracking-wide uppercase shadow-md transition transform active:scale-95 cursor-pointer flex items-center gap-2"
+                  className="w-full sm:w-auto justify-center px-5 sm:px-6 py-3 sm:py-3.5 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs tracking-wide uppercase shadow-md transition transform active:scale-95 cursor-pointer flex items-center gap-2"
                 >
                   <span>⚡ {t.btnLiveDemo}</span>
                 </button>
@@ -416,7 +416,7 @@ export default function ResQvantaApp() {
                 <button
                   type="button"
                   onClick={() => setViewMode("workspace")}
-                  className={`px-6 py-3.5 rounded-full font-bold text-xs backdrop-blur-md transition flex items-center space-x-2 cursor-pointer ${
+                  className={`w-full sm:w-auto justify-center px-5 sm:px-6 py-3 sm:py-3.5 rounded-full font-bold text-xs backdrop-blur-md transition flex items-center space-x-2 cursor-pointer ${
                     isLight
                       ? "bg-slate-900 text-white hover:bg-slate-800 shadow-sm"
                       : "bg-white/15 text-white hover:bg-white/25"
@@ -428,7 +428,7 @@ export default function ResQvantaApp() {
               </div>
 
               {/* Emergency-First Skip Link */}
-              <div className="pt-2 flex flex-wrap items-center gap-3 text-xs font-medium">
+              <div className="pt-1.5 flex flex-wrap items-center gap-2 sm:gap-3 text-xs font-medium">
                 <span className={isLight ? "text-slate-700" : "text-slate-300"}>
                   {t.emergencySkipPrompt}
                 </span>
@@ -442,11 +442,11 @@ export default function ResQvantaApp() {
               </div>
             </div>
 
-            {/* Right Floating Hotspot Selector */}
-            <div className="lg:col-span-5 pointer-events-auto space-y-2.5">
+            {/* Right Hotspot Selector: Adaptive Pill Tabs on Mobile, Full Stack on Tablet/Desktop */}
+            <div className="md:col-span-5 pointer-events-auto space-y-2 sm:space-y-2.5">
               <div className="flex items-center justify-between px-1">
                 <span
-                  className={`text-[11px] font-mono font-bold uppercase tracking-wider ${
+                  className={`text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider ${
                     isLight ? "text-cyan-800" : "text-cyan-400"
                   }`}
                 >
@@ -457,8 +457,75 @@ export default function ResQvantaApp() {
                 </span>
               </div>
 
+              {/* Mobile View (< md): Horizontal Segmented Tabs + Brief Active Summary */}
+              <div className="md:hidden space-y-2">
+                <div
+                  className={`grid grid-cols-3 gap-1 p-1 rounded-2xl backdrop-blur-md ${
+                    isLight ? "bg-slate-200/70" : "bg-slate-950/70"
+                  }`}
+                  role="tablist"
+                  aria-label={t.hotspotsHeader}
+                >
+                  {CORE_HOTSPOTS.map((spot) => {
+                    const isSelected = activeHotspot === spot.id;
+                    const title = t.hotspots[spot.titleKey];
+                    return (
+                      <button
+                        key={`m-${spot.id}`}
+                        type="button"
+                        role="tab"
+                        aria-selected={isSelected}
+                        onClick={() => setActiveHotspot(spot.id)}
+                        className={`py-2 px-1.5 rounded-xl text-center text-[11px] font-bold transition truncate ${
+                          isSelected
+                            ? isLight
+                              ? "bg-cyan-600 text-white shadow-xs"
+                              : "bg-cyan-500/30 text-white"
+                            : isLight
+                            ? "text-slate-700 hover:text-slate-950"
+                            : "text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        <span className="font-mono text-[9px] mr-1 opacity-80">{spot.label}</span>
+                        <span>{title.split(" ")[0]}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Active Card Summary on Mobile */}
+                {(() => {
+                  const activeSpot =
+                    CORE_HOTSPOTS.find((s) => s.id === activeHotspot) || CORE_HOTSPOTS[0];
+                  const title = t.hotspots[activeSpot.titleKey];
+                  const desc = t.hotspots[activeSpot.descKey];
+                  return (
+                    <div
+                      className={`p-3.5 rounded-2xl backdrop-blur-md transition ${
+                        isLight
+                          ? "bg-white/80 text-slate-800 shadow-2xs"
+                          : "bg-slate-950/75 text-slate-200"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 text-xs font-bold">
+                        <span
+                          className={`text-[9px] font-mono px-2 py-0.5 rounded-full ${
+                            isLight ? "bg-cyan-100 text-cyan-800" : "bg-cyan-500/20 text-cyan-300"
+                          }`}
+                        >
+                          {activeSpot.label}
+                        </span>
+                        <span>{title}</span>
+                      </div>
+                      <p className="text-[11px] mt-1 leading-relaxed opacity-85">{desc}</p>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Tablet & Desktop View (>= md): Full Interactive Cards */}
               <div
-                className="space-y-2"
+                className="hidden md:block space-y-2"
                 role="tablist"
                 aria-label={t.hotspotsHeader}
               >
@@ -473,7 +540,7 @@ export default function ResQvantaApp() {
                       role="tab"
                       aria-selected={isSelected}
                       onClick={() => setActiveHotspot(spot.id)}
-                      className={`w-full text-left p-4 rounded-2xl backdrop-blur-md transition cursor-pointer ${
+                      className={`w-full text-left p-3.5 lg:p-4 rounded-2xl backdrop-blur-md transition cursor-pointer ${
                         isSelected
                           ? isLight
                             ? "bg-cyan-600 text-white shadow-md"
@@ -539,9 +606,9 @@ export default function ResQvantaApp() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 items-start pb-28 sm:pb-20">
               {/* Left Column: Open-Canvas Multimodal Input Console */}
-              <div className="lg:col-span-5 pointer-events-auto">
+              <div className="md:col-span-5 pointer-events-auto">
                 <InputConsole
                   inputText={inputText}
                   onInputTextChange={setInputText}
@@ -566,7 +633,7 @@ export default function ResQvantaApp() {
               </div>
 
               {/* Right Column: Active Loading Snapshot OR Fresh Result OR Ready State */}
-              <div className="lg:col-span-7 pointer-events-auto">
+              <div className="md:col-span-7 pointer-events-auto">
                 {isLoading ? (
                   /* HONEST LOADING STATE: Never displays an old incident while analyzing! */
                   <div
@@ -762,7 +829,7 @@ export default function ResQvantaApp() {
       {/* 4. Mobile Floating Navigation Dock (< lg screens) */}
       <nav
         aria-label="Mobile Navigation Dock"
-        className="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 pointer-events-auto flex items-center gap-1.5 p-1.5 rounded-full backdrop-blur-xl shadow-lg border transition-all"
+        className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 pointer-events-auto flex items-center gap-1.5 p-1.5 rounded-full backdrop-blur-xl shadow-lg border transition-all"
         style={{
           backgroundColor: isLight
             ? "rgba(255, 255, 255, 0.9)"
@@ -829,7 +896,7 @@ export default function ResQvantaApp() {
 
       {/* 5. Minimal Footer */}
       <footer
-        className={`relative z-10 py-3 px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs backdrop-blur-sm ${
+        className={`relative z-10 pt-3 pb-20 md:pb-3 px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs backdrop-blur-sm ${
           isLight
             ? "bg-white/40 text-slate-700"
             : "bg-[#04070f]/40 text-slate-300"
