@@ -315,7 +315,6 @@ export function PhotorealisticEarthScene({
   theme,
   activeHotspot,
   onSelectHotspot,
-  t,
   gpsCoords,
   flyoverStage = "city",
 }: PhotorealisticEarthSceneProps) {

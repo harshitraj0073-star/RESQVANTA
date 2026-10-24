@@ -40,32 +40,39 @@ export default function ResQvantaApp() {
   const [viewMode, setViewMode] = useState<"hero" | "workspace" | "radar">(
     "hero"
   );
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const savedTheme = localStorage.getItem("resqvanta_theme");
+        if (savedTheme === "dark" || savedTheme === "light") return savedTheme;
+      } catch {
+        // ignore storage errors
+      }
+    }
+    return "light";
+  });
   const [is3DMode, setIs3DMode] = useState(true);
   const [activeHotspot, setActiveHotspot] = useState<string | null>(
     "multimodal"
   );
-  const [language, setLanguage] = useState<SupportedLanguage>("en-IN");
-
-  useEffect(() => {
-    try {
-      const savedTheme = localStorage.getItem("resqvanta_theme");
-      if (savedTheme === "dark" || savedTheme === "light") {
-        setTheme(savedTheme);
+  const [language, setLanguage] = useState<SupportedLanguage>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const savedLang = localStorage.getItem("resqvanta_lang");
+        if (
+          savedLang === "en-IN" ||
+          savedLang === "hi-IN" ||
+          savedLang === "mr-IN" ||
+          savedLang === "gu-IN"
+        ) {
+          return savedLang;
+        }
+      } catch {
+        // ignore storage errors
       }
-      const savedLang = localStorage.getItem("resqvanta_lang");
-      if (
-        savedLang === "en-IN" ||
-        savedLang === "hi-IN" ||
-        savedLang === "mr-IN" ||
-        savedLang === "gu-IN"
-      ) {
-        setLanguage(savedLang);
-      }
-    } catch {
-      // ignore storage errors
     }
-  }, []);
+    return "en-IN";
+  });
 
   // Unified Controlled Draft State
   const [inputText, setInputText] = useState("");

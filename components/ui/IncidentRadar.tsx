@@ -21,10 +21,7 @@ import {
   ExternalLink,
   CloudSun,
   Layers,
-  Compass,
-  Globe,
   AlertTriangle,
-  Target,
 } from "lucide-react";
 
 interface IncidentRadarProps {
@@ -47,7 +44,6 @@ export function IncidentRadar({
   gpsCoords,
   onGpsCoordsChange,
   theme,
-  flyoverStage = "city",
   onFlyoverStageChange,
 }: IncidentRadarProps) {
   const [isLocating, setIsLocating] = useState(false);
@@ -145,6 +141,9 @@ export function IncidentRadar({
           <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
             Live Responder Proximity & Tactical Ripple Map
           </h2>
+          <div className="text-xs font-mono font-medium text-cyan-600 dark:text-cyan-400">
+            Sector: {activeCityDisplayName}
+          </div>
           <p
             className={`text-xs ${
               isLight ? "text-slate-600" : "text-slate-300"
